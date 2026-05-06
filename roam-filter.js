@@ -919,7 +919,7 @@ const getOrderedBlockAncestors = (blockUid) => {
   if (!isRoamAPIAvailable() || !blockUid) return [];
   const ancestors = [];
   let currentUid = blockUid;
-  
+
   try {
     while (true) {
       const result = window.roamAlphaAPI.data.q(`
@@ -930,7 +930,7 @@ const getOrderedBlockAncestors = (blockUid) => {
          [?parent :block/uid ?parentUid]
          [?parent :block/string ?parentString]]
       `);
-      
+
       if (result && result.length > 0 && result[0][0]) {
         ancestors.unshift({
           uid: result[0][0],
@@ -957,7 +957,7 @@ const getBlockAncestors = (blockUid) => {
        [?block :block/uid "${escapeDatalogString(blockUid)}"]]
     `);
     if (!result || !result[0] || !result[0][0]) return [];
-    
+
     const parents = result[0][0][':block/parents'] || [];
     return parents
       .filter(p => p[':block/string'])
@@ -972,7 +972,7 @@ const generateBreadcrumb = (pageName, blockUid) => {
   const ancestors = getBlockAncestors(blockUid);
   const parts = [pageName, ...ancestors];
   if (parts.length <= 1) return null;
-  
+
   return {
     md: `\n> **Ruta:** ${parts.join(' → ')}`,
     xhtml: `<div class="breadcrumb" style="font-size: 0.85em; color: #666; margin-bottom: 0.8em; padding: 0.5em; background: #f9f9f9; border-radius: 4px;"><strong>Ruta:</strong> ${parts.map(p => escapeHTML(p)).join(' &rarr; ')}</div>\n`
@@ -1438,7 +1438,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         const hasChildren = (node.children && node.children.length > 0);
         const childCount = node.hasDeepChildren ? node.deepChildrenCount : (node.children?.length || 0);
         const deepInfo = childCount > 0 ? ` <span style="color: #888; font-size: 11px;">(+${childCount} sub-bloques)</span>` : '';
-        
+
         const toggleBtn = hasChildren
           ? `<span class="tree-toggle" data-uid="${node.uid}" style="cursor: pointer; width: 16px; display: inline-flex; justify-content: center; align-items: center; color: #888; font-size: 11px; user-select: none; flex-shrink: 0; padding-top: 4px; transition: transform 0.2s;" title="Expandir/Colapsar">▶</span>`
           : `<span style="width: 16px; display: inline-block; flex-shrink: 0;"></span>`;
@@ -1945,11 +1945,11 @@ const promptUnifiedExport = (pageName, pageUid) => {
     treeContainer.addEventListener('click', (e) => {
       const toggle = e.target.closest('.tree-toggle');
       if (!toggle) return;
-      
+
       const uid = toggle.dataset.uid;
       const nodeRow = toggle.closest('.tree-node');
       const childrenDiv = nodeRow.querySelector(`.tree-children[data-parent-uid="${uid}"]`);
-      
+
       if (childrenDiv) {
         const isExpanded = childrenDiv.style.display !== 'none';
         childrenDiv.style.display = isExpanded ? 'none' : 'block';
@@ -2016,7 +2016,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       branchNamingSelector.querySelectorAll('button').forEach(btn => {
         btn.addEventListener('click', () => {
           branchNamingStrategy = btn.dataset.naming;
-          
+
           // Update active styles
           const buttons = branchNamingSelector.querySelectorAll('button');
           buttons.forEach((b, idx) => {
@@ -2561,12 +2561,12 @@ const unifiedExport = async () => {
           const rootContent = branchTree.content || 'untitled';
           const prefixNumber = useDescendingOrder ? (totalForPrefix - idx) : (idx + 1);
           const prefix = useOrderPrefix ? String(prefixNumber).padStart(2, '0') + '_' : '';
-          
+
           let baseName = '';
           const safePage = generatePageFilename(pageName);
           const blockName = generateRootFilename(rootContent);
           const blockNameWithoutExt = blockName.substring(0, blockName.length - 3); // Remove .md
-          
+
           if (branchNamingStrategy === 'block') {
             baseName = blockNameWithoutExt;
           } else if (branchNamingStrategy === 'page_block') {
@@ -2574,9 +2574,9 @@ const unifiedExport = async () => {
           } else if (branchNamingStrategy === 'page') {
             baseName = safePage;
           }
-          
+
           let filename = prefix + baseName + '.md';
-          
+
           // Collision prevention: If filename already exists, append _2, _3...
           let counter = 2;
           while (files.some(f => f.filename === filename)) {
@@ -2585,19 +2585,18 @@ const unifiedExport = async () => {
           }
 
           const ancestors = getOrderedBlockAncestors(branchTree.uid);
-          let markdown = "";
-          
-          if (ancestors.length > 0 && mdOptions.structure === 'hierarchical') {
-            let indent = "";
+          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+
+          let ancestorsContext = "";
+          if (ancestors.length > 0) {
+            ancestorsContext = "\n>\n> **Jerarquía original:**\n";
+            let indent = "> ";
             for (const anc of ancestors) {
-               markdown += `${indent}- ${anc.content}\n`;
-               indent += "  ";
+              ancestorsContext += `${indent}- ${anc.content}\n`;
+              indent += "  ";
             }
-            markdown += treeToMarkdown([branchTree], ancestors.length, mdOptions);
-          } else {
-            markdown = treeToMarkdown([branchTree], 0, mdOptions);
           }
-          const breadcrumbText = branchTree.breadcrumbMd || '';
+          const breadcrumbText = ancestorsContext || branchTree.breadcrumbMd || '';
           const header = `# ${rootContent}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}${breadcrumbText}\n\n---\n\n`;
 
           files.push({
