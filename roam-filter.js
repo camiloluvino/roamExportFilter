@@ -914,6 +914,39 @@ const escapeHTML = (str) => {
     .replace(/'/g, '&#39;');
 };
 
+// Iteratively get parent blocks up to the page root to ensure correct ordering
+const getOrderedBlockAncestors = (blockUid) => {
+  if (!isRoamAPIAvailable() || !blockUid) return [];
+  const ancestors = [];
+  let currentUid = blockUid;
+  
+  try {
+    while (true) {
+      const result = window.roamAlphaAPI.data.q(`
+        [:find ?parentUid ?parentString
+         :where
+         [?child :block/uid "${escapeDatalogString(currentUid)}"]
+         [?parent :block/children ?child]
+         [?parent :block/uid ?parentUid]
+         [?parent :block/string ?parentString]]
+      `);
+      
+      if (result && result.length > 0 && result[0][0]) {
+        ancestors.unshift({
+          uid: result[0][0],
+          content: result[0][1] || ""
+        });
+        currentUid = result[0][0];
+      } else {
+        break;
+      }
+    }
+  } catch (err) {
+    console.error('Error getting ordered ancestors:', err);
+  }
+  return ancestors;
+};
+
 // Get block ancestors from page to the block itself
 const getBlockAncestors = (blockUid) => {
   if (!isRoamAPIAvailable() || !blockUid) return [];
@@ -2551,7 +2584,19 @@ const unifiedExport = async () => {
             counter++;
           }
 
-          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+          const ancestors = getOrderedBlockAncestors(branchTree.uid);
+          let markdown = "";
+          
+          if (ancestors.length > 0 && mdOptions.structure === 'hierarchical') {
+            let indent = "";
+            for (const anc of ancestors) {
+               markdown += `${indent}- ${anc.content}\n`;
+               indent += "  ";
+            }
+            markdown += treeToMarkdown([branchTree], ancestors.length, mdOptions);
+          } else {
+            markdown = treeToMarkdown([branchTree], 0, mdOptions);
+          }
           const breadcrumbText = branchTree.breadcrumbMd || '';
           const header = `# ${rootContent}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}${breadcrumbText}\n\n---\n\n`;
 
