@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.24.0
-// Date: 2026-05-06 11:35
+// Version: 2.24.1
+// Date: 2026-05-06 18:35
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
