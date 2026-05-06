@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.23.2
-// Date: 2026-04-16 01:10
+// Version: 2.24.0
+// Date: 2026-05-06 11:35
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -914,6 +914,38 @@ const escapeHTML = (str) => {
     .replace(/'/g, '&#39;');
 };
 
+// Get block ancestors from page to the block itself
+const getBlockAncestors = (blockUid) => {
+  if (!isRoamAPIAvailable() || !blockUid) return [];
+  try {
+    const result = window.roamAlphaAPI.data.q(`
+      [:find (pull ?block [{:block/parents [:block/uid :block/string :block/order]}])
+       :where
+       [?block :block/uid "${escapeDatalogString(blockUid)}"]]
+    `);
+    if (!result || !result[0] || !result[0][0]) return [];
+    
+    const parents = result[0][0][':block/parents'] || [];
+    return parents
+      .filter(p => p[':block/string'])
+      .map(p => p[':block/string']);
+  } catch (err) {
+    console.error('Error getting ancestors:', err);
+    return [];
+  }
+};
+
+const generateBreadcrumb = (pageName, blockUid) => {
+  const ancestors = getBlockAncestors(blockUid);
+  const parts = [pageName, ...ancestors];
+  if (parts.length <= 1) return null;
+  
+  return {
+    md: `\n> **Ruta:** ${parts.join(' → ')}`,
+    xhtml: `<div class="breadcrumb" style="font-size: 0.85em; color: #666; margin-bottom: 0.8em; padding: 0.5em; background: #f9f9f9; border-radius: 4px;"><strong>Ruta:</strong> ${parts.map(p => escapeHTML(p)).join(' &rarr; ')}</div>\n`
+  };
+};
+
 // Transform Roam Markdown to XHTML for EPUB
 const roamMarkupToHtml = (str) => {
   if (!str) return '';
@@ -977,17 +1009,22 @@ const treeToXhtml = (trees, options = {}, level = 0) => {
   for (const node of trees) {
     const isHeading = node.heading && node.heading > 0;
 
+    let breadcrumbHtml = '';
+    if (level === 0 && node.breadcrumbXhtml) {
+      breadcrumbHtml = node.breadcrumbXhtml;
+    }
+
     if (isFlat) {
       if (isHeading) {
-        xhtml += `<h${node.heading}>${roamMarkupToHtml(node.content)}</h${node.heading}>\n`;
+        xhtml += `${breadcrumbHtml}<h${node.heading}>${roamMarkupToHtml(node.content)}</h${node.heading}>\n`;
       } else {
-        xhtml += `<p>${roamMarkupToHtml(node.content)}</p>\n`;
+        xhtml += `${breadcrumbHtml}<p>${roamMarkupToHtml(node.content)}</p>\n`;
       }
     } else {
       if (isHeading) {
-        xhtml += `<li><h${node.heading}>${roamMarkupToHtml(node.content)}</h${node.heading}>`;
+        xhtml += `<li>${breadcrumbHtml}<h${node.heading}>${roamMarkupToHtml(node.content)}</h${node.heading}>`;
       } else {
-        xhtml += `<li>${roamMarkupToHtml(node.content)}`;
+        xhtml += `<li>${breadcrumbHtml}${roamMarkupToHtml(node.content)}`;
       }
     }
 
@@ -1363,17 +1400,32 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
     // Render tree structure with checkboxes for "Por Ramas" tab
     const renderTree = (nodes, indentLevel = 0) => {
-      if (!nodes || nodes.length === 0) return '<p style="color: #888; padding: 12px;">No hay bloques en esta página</p>';
+      if (!nodes || nodes.length === 0) return indentLevel === 0 ? '<p style="color: #888; padding: 12px;">No hay bloques en esta página</p>' : '';
       return nodes.map(node => {
-        const indent = indentLevel * 24;
-        const deepInfo = node.hasDeepChildren ? ` <span style="color: #888; font-size: 11px;">(+${node.deepChildrenCount} sub-bloques)</span>` : '';
+        const hasChildren = (node.children && node.children.length > 0);
+        const childCount = node.hasDeepChildren ? node.deepChildrenCount : (node.children?.length || 0);
+        const deepInfo = childCount > 0 ? ` <span style="color: #888; font-size: 11px;">(+${childCount} sub-bloques)</span>` : '';
+        
+        const toggleBtn = hasChildren
+          ? `<span class="tree-toggle" data-uid="${node.uid}" style="cursor: pointer; width: 16px; display: inline-flex; justify-content: center; align-items: center; color: #888; font-size: 11px; user-select: none; flex-shrink: 0; padding-top: 4px; transition: transform 0.2s;" title="Expandir/Colapsar">▶</span>`
+          : `<span style="width: 16px; display: inline-block; flex-shrink: 0;"></span>`;
+
+        const childrenHtml = hasChildren
+          ? `<div class="tree-children" data-parent-uid="${node.uid}" style="display: none; padding-left: 20px;">
+               ${renderTree(node.children, indentLevel + 1)}
+             </div>`
+          : '';
+
         return `
-          <div style="padding: 5px 0; padding-left: ${indent}px;">
-            <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 8px;">
-              <input type="checkbox" data-uid="${node.uid}" class="branch-checkbox" style="margin-top: 3px; cursor: pointer; min-width: 16px;">
-              <span style="font-size: 14px; line-height: 1.5;" title="${(node.fullContent || node.content || '').replace(/"/g, '&quot;')}">${node.content}${deepInfo}</span>
-            </label>
-            ${node.children && node.children.length > 0 ? renderTree(node.children, indentLevel + 1) : ''}
+          <div class="tree-node" style="padding: 2px 0;" data-level="${indentLevel}">
+            <div style="display: flex; align-items: flex-start; gap: 4px;">
+              ${toggleBtn}
+              <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 6px; flex: 1;">
+                <input type="checkbox" data-uid="${node.uid}" class="branch-checkbox" style="margin-top: 3px; cursor: pointer; min-width: 14px;">
+                <span style="font-size: 14px; line-height: 1.5;" title="${(node.fullContent || node.content || '').replace(/"/g, '&quot;')}">${node.content}${deepInfo}</span>
+              </label>
+            </div>
+            ${childrenHtml}
           </div>
         `;
       }).join('');
@@ -1475,16 +1527,38 @@ const promptUnifiedExport = (pageName, pageUid) => {
             <p style="margin: 0; font-size: 14px; color: #666;">
               Selecciona las ramas que deseas exportar:
             </p>
-            <button id="select-all-branches" style="
-              padding: 4px 12px;
-              font-size: 12px;
-              border: 1px solid #137CBD;
-              border-radius: 4px;
-              background: white;
-              color: #137CBD;
-              cursor: pointer;
-              transition: all 0.2s;
-            ">☑ Seleccionar todo</button>
+            <div style="display: flex; gap: 8px;">
+              <button id="expand-all-branches" style="
+                padding: 4px 12px;
+                font-size: 12px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: white;
+                color: #666;
+                cursor: pointer;
+                transition: all 0.2s;
+              ">⊞ Expandir todo</button>
+              <button id="collapse-all-branches" style="
+                padding: 4px 12px;
+                font-size: 12px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                background: white;
+                color: #666;
+                cursor: pointer;
+                transition: all 0.2s;
+              ">⊟ Colapsar todo</button>
+              <button id="select-all-branches" style="
+                padding: 4px 12px;
+                font-size: 12px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: white;
+                color: #137CBD;
+                cursor: pointer;
+                transition: all 0.2s;
+              ">☑ Seleccionar todo</button>
+            </div>
           </div>
           <div id="branch-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
           <div id="branch-tree-container" style="
@@ -1833,6 +1907,46 @@ const promptUnifiedExport = (pageName, pageUid) => {
     treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
       cb.addEventListener('change', () => { updateBranchCount(); updateSelectAllLabel(); });
     });
+
+    // Toggle individual branches using event delegation
+    treeContainer.addEventListener('click', (e) => {
+      const toggle = e.target.closest('.tree-toggle');
+      if (!toggle) return;
+      
+      const uid = toggle.dataset.uid;
+      const nodeRow = toggle.closest('.tree-node');
+      const childrenDiv = nodeRow.querySelector(`.tree-children[data-parent-uid="${uid}"]`);
+      
+      if (childrenDiv) {
+        const isExpanded = childrenDiv.style.display !== 'none';
+        childrenDiv.style.display = isExpanded ? 'none' : 'block';
+        toggle.textContent = isExpanded ? '▶' : '▼';
+      }
+    });
+
+    // Expand / Collapse all logic
+    const expandAllBtn = document.getElementById('expand-all-branches');
+    const collapseAllBtn = document.getElementById('collapse-all-branches');
+
+    if (expandAllBtn && collapseAllBtn) {
+      expandAllBtn.addEventListener('click', () => {
+        treeContainer.querySelectorAll('.tree-children').forEach(div => {
+          div.style.display = 'block';
+        });
+        treeContainer.querySelectorAll('.tree-toggle').forEach(t => {
+          t.textContent = '▼';
+        });
+      });
+
+      collapseAllBtn.addEventListener('click', () => {
+        treeContainer.querySelectorAll('.tree-children').forEach(div => {
+          div.style.display = 'none';
+        });
+        treeContainer.querySelectorAll('.tree-toggle').forEach(t => {
+          t.textContent = '▶';
+        });
+      });
+    }
 
     // Favorite tags click
     favTagsContainer.querySelectorAll('.fav-tag-chip').forEach(chip => {
@@ -2358,6 +2472,13 @@ const unifiedExport = async () => {
 
           if (!branchTree) continue;
 
+          // Add breadcrumbs
+          const breadcrumbs = generateBreadcrumb(pageName, uid);
+          if (breadcrumbs) {
+            branchTree.breadcrumbMd = breadcrumbs.md;
+            branchTree.breadcrumbXhtml = breadcrumbs.xhtml;
+          }
+
           // If filter tag specified, prune sub-branches that don't contain the tag
           if (filterTag) {
             branchTree = filterTreeByTag(branchTree, filterTag);
@@ -2431,7 +2552,8 @@ const unifiedExport = async () => {
           }
 
           const markdown = treeToMarkdown([branchTree], 0, mdOptions);
-          const header = `# ${rootContent}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
+          const breadcrumbText = branchTree.breadcrumbMd || '';
+          const header = `# ${rootContent}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}${breadcrumbText}\n\n---\n\n`;
 
           files.push({
             filename,

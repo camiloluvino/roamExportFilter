@@ -1,4 +1,18 @@
 # Changelog
++
++## [2.24.0] - 2026-05-06 11:35
++
++### Added
++- **Tree-View Interactivo**: Nueva funcionalidad en la pestaña "Por Ramas" que permite navegar por la jerarquía de la página de forma selectiva.
++  - Botones de toggle (▶/▼) para expandir o colapsar ramas individuales.
++  - Botones globales "⊞ Expandir todo" y "⊟ Colapsar todo" para manejo rápido de listas largas.
++- **Ruta de Contexto (Breadcrumbs)**: Las exportaciones (Markdown y EPUB) ahora incluyen la ruta completa de bloques padres.
++  - Formato: `Página → Padre 1 → Padre 2`.
++  - Útil para mantener el contexto de bloques extraídos de niveles profundos.
++
++### Fixed
++- **Indentación del Árbol**: Corregido problema visual donde la sangría de los bloques aumentaba exponencialmente debido a la anidación de paddings. Ahora usa una estructura de sangría plana y limpia.
++
 
 ## [2.23.2] - 2026-04-16 01:10
 

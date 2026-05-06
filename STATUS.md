@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-04-16 01:10
+> **Última actualización**: 2026-05-06 11:35
 
 ---
 
 ## Versión actual
 
-**2.23.2** (2026-04-16 01:10)
+**2.24.0** (2026-05-06 11:35)
 
 ---
 
@@ -38,6 +38,11 @@
 ---
 
 ## Historial reciente
++
++### v2.24.0 (2026-05-06 11:35)
++- Added: **Árbol Interactivo en "Por Ramas"**. Ahora los bloques se pueden expandir y colapsar individualmente (▶/▼) o de forma global (Botones Expandir/Colapsar todo).
++- Added: **Breadcrumb de padres en exportación**. Los archivos Markdown y EPUB ahora incluyen la ruta jerárquica (Página → Padre 1 → Padre 2) para dar contexto al bloque exportado.
++- Fixed: Corregida indentación cuadrática en la vista previa del árbol.
 
 ### v2.23.2 (2026-04-16 01:10)
 - Fixed: **UI Fix definitiva**. Uso de `flex-shrink: 0` y ajuste de `overflow` para asegurar que el contenido sea desplazable sin ocultar nunca el footer (botones) ni el header.
