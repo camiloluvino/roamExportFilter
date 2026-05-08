@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.25.0
-// Date: 2026-05-08 13:43
+// Version: 2.26.0
+// Date: 2026-05-08 16:55
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1398,8 +1398,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
       padding: 0;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      min-width: 800px;
-      max-width: 1000px;
+      min-width: 1100px;
+      max-width: 1200px;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
@@ -1543,7 +1543,9 @@ const promptUnifiedExport = (pageName, pageUid) => {
         </div>
         
         <!-- Por Ramas content -->
-        <div id="content-branches" style="display: none;">
+        <div id="content-branches" style="display: none; gap: 20px;">
+          <!-- Left column: Tree selection -->
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
           <!-- Depth selector -->
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="font-size: 13px; color: #666;">Profundidad:</span>
@@ -1598,13 +1600,16 @@ const promptUnifiedExport = (pageName, pageUid) => {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 12px;
-            max-height: 400px;
+            max-height: 55vh;
             overflow-y: auto;
             background: #fafafa;
           ">
             ${renderTree(structure)}
           </div>
-          <div style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
+          </div>
+          <!-- Right column: Export options -->
+          <div style="width: 300px; flex-shrink: 0; overflow-y: auto; max-height: 55vh; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
+            <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 14px;">⚙ Opciones de exportación</div>
             <div style="margin-bottom: 12px;">
               <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
               <div id="branch-naming-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">
@@ -1870,7 +1875,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         tagInput.focus();
       } else if (tab === 'branches') {
         tabBranches.style.cssText = tabStyle(true);
-        contentBranches.style.display = 'block';
+        contentBranches.style.display = 'flex';
         pageNameDisplay.style.display = '';
         updateBranchCount();
       } else if (tab === 'pages') {

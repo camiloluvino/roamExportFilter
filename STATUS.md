@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-05-08 13:43
+> **Última actualización**: 2026-05-08 16:55
 
 ---
 
 ## Versión actual
 
-**2.25.0** (2026-05-08 13:43)
+**2.26.0** (2026-05-08 16:55)
 
 ---
 
@@ -39,6 +39,12 @@
 ---
 
 ## Historial reciente
+
+### v2.26.0 (2026-05-08 16:55)
+- Added: **Rediseño de pestaña "Por Ramas"**. Estructura renovada con layout de dos columnas para optimizar el espacio en pantallas grandes.
+  - Columna izquierda: Selector de profundidad y Árbol de ramas (con mayor altura vertical, hasta 55vh).
+  - Columna derecha: Panel de opciones de exportación (Nomenclatura, Combinar, Prefijos y Filtros) agrupado visualmente.
+  - Modal ampliado: Ancho incrementado a 1100-1200px para evitar el hacinamiento visual de opciones.
 
 ### v2.25.0 (2026-05-08 13:43)
 - Added: **Combinar en archivo único**. Nueva opción en el tab "Por Ramas" que permite exportar múltiples ramas seleccionadas en un solo archivo Markdown. El contenido se concatena con separadores `---` y encabezados H2 por rama, conservando breadcrumbs de jerarquía. Al activar la opción, se deshabilitan nomenclatura individual y prefijos de orden (no aplican). Se oculta automáticamente cuando el formato es EPUB (ya genera archivo único).

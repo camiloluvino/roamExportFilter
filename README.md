@@ -7,7 +7,7 @@ Plugin para Roam Research que exporta contenido filtrado usando consultas Datalo
 - **Smart Export**: Modal unificado con tres modos (por filtro, por ramas o por selección de páginas).
 - **Formatos de Salida**: Exportación a **Markdown Jerárquico**, **Markdown Plano** (párrafos limpios conservando Títulos H1/H2/H3 nativos de Roam) y **EPUB** (con soporte nativo para el formato de Roam).
 - **Selección de Páginas**: Tab "Por Páginas" con buscador universal para exportar múltiples páginas del grafo a la vez.
-- **Selección de Ramas**: Interfaz visual con botón "Seleccionar todo", **expand/collapse individual (▶/▼)**, botones de **Expandir/Colapsar todo**, filtrado de sub-ramas y nomenclatura personalizada.
+- **Selección de Ramas**: Interfaz visual con **diseño organizado en dos columnas**, botón "Seleccionar todo", **expand/collapse individual (▶/▼)**, botones de **Expandir/Colapsar todo**, filtrado de sub-ramas y nomenclatura personalizada.
 - **Ruta de Contexto**: Las exportaciones por ramas incluyen un registro de la **Jerarquía original** (bloques padres) en formato de cita al inicio del archivo, permitiendo conservar el contexto sin afectar la indentación del contenido principal.
 - **Soporte total**: Funciona en cualquier página, incluyendo **Daily Notes**.
 - **ZIP automático**: Bundling cuando hay >5 archivos

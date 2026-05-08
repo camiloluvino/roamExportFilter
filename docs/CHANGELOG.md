@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.26.0] - 2026-05-08 16:55
+
+### Added
+- **Rediseño de pestaña "Por Ramas"**: Nueva estructura de dos columnas que organiza mejor la información.
+  - El modal ahora es más ancho (1100-1200px) para aprovechar pantallas modernas.
+  - El árbol de ramas ocupa la columna izquierda con mayor altura dinámica (55vh).
+  - Las opciones de configuración se agrupan en un panel lateral derecho dedicado.
+  - Mejora la accesibilidad al reducir la necesidad de scroll vertical para encontrar opciones críticas.
+
 ## [2.25.0] - 2026-05-08 13:43
 
 ### Added
