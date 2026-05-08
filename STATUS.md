@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-05-06 18:35
+> **Última actualización**: 2026-05-08 13:43
 
 ---
 
 ## Versión actual
 
-**2.24.1** (2026-05-06 18:35)
+**2.25.0** (2026-05-08 13:43)
 
 ---
 
@@ -21,6 +21,7 @@
 | **Export by Root Blocks** | ✅ Estable | Exporta cada bloque raíz como archivo separado |
 | **ZIP Export (>5 files)** | ✅ Estable | Bundling automático con JSZip |
 | **Custom Naming** | ✅ Estable | Opciones de nomenclatura y prevención de duplicados |
+| **Merge Export** | ✅ Nuevo | Combina múltiples ramas en un solo archivo Markdown |
 
 ---
 
@@ -38,6 +39,9 @@
 ---
 
 ## Historial reciente
+
+### v2.25.0 (2026-05-08 13:43)
+- Added: **Combinar en archivo único**. Nueva opción en el tab "Por Ramas" que permite exportar múltiples ramas seleccionadas en un solo archivo Markdown. El contenido se concatena con separadores `---` y encabezados H2 por rama, conservando breadcrumbs de jerarquía. Al activar la opción, se deshabilitan nomenclatura individual y prefijos de orden (no aplican). Se oculta automáticamente cuando el formato es EPUB (ya genera archivo único).
 
 ### v2.24.1 (2026-05-06 18:35)
 - Improved: **Visualización de Jerarquía de Padres**. En la exportación por ramas, los bloques padres ahora se muestran en un bloque de cita (`>`) al principio del documento. Esto evita la indentación excesiva del contenido principal mientras mantiene el registro completo del contexto original.

@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.24.1
-// Date: 2026-05-06 18:35
+// Version: 2.25.0
+// Date: 2026-05-08 13:43
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1617,7 +1617,21 @@ const promptUnifiedExport = (pageName, pageUid) => {
             
             <div style="height: 1px; background: #e0e0e0; margin: 12px 0;"></div>
 
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
+            <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
+              <input type="checkbox" id="merge-export-enabled">
+              <span>Combinar en archivo único</span>
+            </label>
+            <div id="merge-filename-container" style="display: none; margin-bottom: 8px;">
+              <input type="text" id="merge-filename" 
+                style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 4px;"
+                placeholder="nombre_del_archivo"
+              />
+              <div id="merge-filename-preview" style="font-size: 11px; color: #888; margin-top: 4px; font-family: monospace;">Ej: nombre_pagina_export.md</div>
+            </div>
+
+            <div style="height: 1px; background: #e0e0e0; margin: 12px 0;"></div>
+
+            <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
               <input type="checkbox" id="order-prefix-enabled">
               <span>Agregar prefijo de orden (01_, 02_, ...)</span>
             </label>
@@ -1800,6 +1814,11 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const exportBtn = document.getElementById('unified-export');
     const treeContainer = document.getElementById('branch-tree-container');
     const favTagsContainer = document.getElementById('fav-tags-container');
+    const mergeExportEnabled = document.getElementById('merge-export-enabled');
+    const mergeExportLabel = document.getElementById('merge-export-label');
+    const mergeFilenameContainer = document.getElementById('merge-filename-container');
+    const mergeFilenameInput = document.getElementById('merge-filename');
+    const mergeFilenamePreview = document.getElementById('merge-filename-preview');
 
     // Pages tab elements
     const pagesListContainer = document.getElementById('pages-list-container');
@@ -2043,6 +2062,42 @@ const promptUnifiedExport = (pageName, pageUid) => {
     // Initialize preview
     updateNamingPreview();
 
+    // Merge export toggle - combines all branches into a single file
+    mergeExportEnabled.addEventListener('change', () => {
+      const isMerge = mergeExportEnabled.checked;
+
+      // Show/hide merge filename input
+      mergeFilenameContainer.style.display = isMerge ? 'block' : 'none';
+
+      // Disable naming options when merging (not needed for single file)
+      branchNamingSelector.style.opacity = isMerge ? '0.4' : '1';
+      branchNamingSelector.style.pointerEvents = isMerge ? 'none' : 'auto';
+      branchNamingPreview.style.display = isMerge ? 'none' : 'block';
+
+      // Disable order prefix when merging
+      const orderPrefixLabel = document.getElementById('order-prefix-label');
+      orderPrefixEnabled.disabled = isMerge;
+      if (orderPrefixLabel) orderPrefixLabel.style.opacity = isMerge ? '0.4' : '1';
+      orderDescendingLabel.style.opacity = isMerge ? '0.4' : '0.5';
+      if (isMerge) {
+        orderPrefixEnabled.checked = false;
+        orderDescending.disabled = true;
+        orderDescending.checked = false;
+      }
+
+      if (isMerge) {
+        // Pre-fill with page name
+        mergeFilenameInput.value = generatePageFilename(pageName) + '_export';
+        mergeFilenamePreview.textContent = 'Ej: ' + generatePageFilename(pageName) + '_export.md';
+      }
+    });
+
+    // Update merge filename preview on input
+    mergeFilenameInput.addEventListener('input', () => {
+      const val = mergeFilenameInput.value.trim() || generatePageFilename(pageName) + '_export';
+      mergeFilenamePreview.textContent = 'Ej: ' + val + '.md';
+    });
+
     // Order prefix toggle - enables/disables descending option
     orderPrefixEnabled.addEventListener('change', () => {
       orderDescending.disabled = !orderPrefixEnabled.checked;
@@ -2218,6 +2273,23 @@ const promptUnifiedExport = (pageName, pageUid) => {
       btn.addEventListener('click', () => {
         selectedFormat = btn.dataset.format;
         updateFormatButtonStyles();
+        // EPUB always generates a single file, so hide merge option for EPUB
+        if (mergeExportLabel) {
+          if (selectedFormat === 'epub') {
+            mergeExportLabel.style.display = 'none';
+            mergeFilenameContainer.style.display = 'none';
+            mergeExportEnabled.checked = false;
+            // Re-enable naming/order prefix
+            branchNamingSelector.style.opacity = '1';
+            branchNamingSelector.style.pointerEvents = 'auto';
+            branchNamingPreview.style.display = 'block';
+            orderPrefixEnabled.disabled = false;
+            const orderPrefixLabel = document.getElementById('order-prefix-label');
+            if (orderPrefixLabel) orderPrefixLabel.style.opacity = '1';
+          } else {
+            mergeExportLabel.style.display = 'flex';
+          }
+        }
       });
     });
 
@@ -2345,6 +2417,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
           useOrderPrefix: orderPrefixEnabled.checked,
           useDescendingOrder: orderDescending.checked,
           branchNamingStrategy,
+          mergeIntoSingle: mergeExportEnabled.checked,
+          mergeFilename: mergeFilenameInput.value.trim() || generatePageFilename(pageName) + '_export',
           format: selectedFormat,
           epubOptions: { ...epubOptions },
           mdOptions: { ...mdOptions }
@@ -2489,7 +2563,7 @@ const unifiedExport = async () => {
 
     } else if (result.mode === 'branches') {
       // Export by branch selection
-      const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, epubOptions, mdOptions, branchNamingStrategy = 'block' } = result;
+      const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, epubOptions, mdOptions, branchNamingStrategy = 'block', mergeIntoSingle, mergeFilename } = result;
 
       showNotification(`📄 Procesando ${selectedUids.length} ramas...`, '#137CBD');
 
@@ -2553,6 +2627,38 @@ const unifiedExport = async () => {
         } else {
           showNotification('❌ Error generando EPUB', '#DC143C');
         }
+      } else if (mergeIntoSingle) {
+        // MERGE MODE: Combine all branches into a single Markdown file
+        const allSections = [];
+
+        for (const { tree: branchTree } of branchTrees) {
+          const rootContent = branchTree.content || 'untitled';
+          const ancestors = getOrderedBlockAncestors(branchTree.uid);
+          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+
+          let ancestorsContext = "";
+          if (ancestors.length > 0) {
+            ancestorsContext = "\n>\n> **Jerarquía original:**\n";
+            let indent = "> ";
+            for (const anc of ancestors) {
+              ancestorsContext += `${indent}- ${anc.content}\n`;
+              indent += "  ";
+            }
+          }
+          const breadcrumbText = ancestorsContext || branchTree.breadcrumbMd || '';
+
+          // Each branch gets an H2 heading (H1 is reserved for the global title)
+          const section = `## ${rootContent}${breadcrumbText}\n\n${markdown}`;
+          allSections.push(section);
+        }
+
+        const globalHeader = `# ${pageName}\n> Generated: ${new Date().toLocaleString()}\n> Ramas exportadas: ${branchTrees.length}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
+        const mergedContent = globalHeader + allSections.join('\n---\n\n');
+        const filename = (mergeFilename || generatePageFilename(pageName) + '_export') + '.md';
+
+        downloadFile(mergedContent, filename);
+        showNotification(`✓ Exportado archivo combinado (${branchTrees.length} ramas)`, '#28a745');
+
       } else {
         // Markdown: One file per branch (existing behavior)
         const files = [];

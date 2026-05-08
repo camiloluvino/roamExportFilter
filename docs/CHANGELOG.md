@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.25.0] - 2026-05-08 13:43
+
+### Added
+- **Combinar en archivo único**: Nueva opción en la pestaña "Por Ramas" que permite exportar múltiples ramas seleccionadas concatenadas en un solo archivo Markdown.
+  - Toggle "Combinar en archivo único" en la sección de opciones.
+  - Campo de nombre de archivo editable (pre-llenado con el nombre de la página).
+  - Cada rama se separa con `---` y usa encabezado `##` (H2); el título global es `#` (H1).
+  - Se conservan los breadcrumbs de jerarquía original para cada rama.
+  - Al activar, se deshabilitan automáticamente las opciones de nomenclatura individual y prefijos de orden (no aplican en archivo único).
+  - Se oculta automáticamente cuando el formato es EPUB (ya genera archivo único por diseño).
+
+### Technical
+- Added `mergeIntoSingle` and `mergeFilename` fields to branches export result object.
+- Added merge toggle event listener with UI state management (disables naming/order when active).
+- Added format selector interaction: hides merge option for EPUB, shows for Markdown.
+- Added merge execution branch in `unifiedExport()` that concatenates branch sections with H2 headings and `---` separators.
+
 ## [2.24.1] - 2026-05-06 18:35
 
 ### Improved
