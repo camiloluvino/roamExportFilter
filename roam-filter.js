@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.26.0
-// Date: 2026-05-08 16:55
+// Version: 2.27.0
+// Date: 2026-05-18 12:26
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1922,7 +1922,46 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
       // Re-attach checkbox listeners
       treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
-        cb.addEventListener('change', () => { updateBranchCount(); updateSelectAllLabel(); });
+        cb.addEventListener('change', (e) => {
+          const isChecked = e.target.checked;
+          const container = e.target.closest('.tree-node');
+          
+          if (container) {
+            // 1. Cascada hacia abajo
+            const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+            descendantCheckboxes.forEach(childCb => {
+              childCb.checked = isChecked;
+              childCb.indeterminate = false;
+            });
+            
+            // 2. Cascada hacia arriba
+            let parentContainer = container.parentElement.closest('.tree-node');
+            while (parentContainer) {
+              const parentCb = parentContainer.querySelector('.branch-checkbox');
+              if (parentCb) {
+                const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+                if (allDescendants.length > 0) {
+                  const allChecked = allDescendants.every(c => c.checked);
+                  const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                  if (allChecked) {
+                    parentCb.checked = true;
+                    parentCb.indeterminate = false;
+                  } else if (someChecked) {
+                    parentCb.checked = false;
+                    parentCb.indeterminate = true;
+                  } else {
+                    parentCb.checked = false;
+                    parentCb.indeterminate = false;
+                  }
+                }
+              }
+              parentContainer = parentContainer.parentElement.closest('.tree-node');
+            }
+          }
+          
+          updateBranchCount();
+          updateSelectAllLabel();
+        });
       });
 
       updateBranchCount();
@@ -1955,14 +1994,56 @@ const promptUnifiedExport = (pageName, pageUid) => {
       const allCheckboxes = treeContainer.querySelectorAll('.branch-checkbox');
       const checkedBoxes = treeContainer.querySelectorAll('.branch-checkbox:checked');
       const shouldSelect = checkedBoxes.length < allCheckboxes.length;
-      allCheckboxes.forEach(cb => { cb.checked = shouldSelect; });
+      allCheckboxes.forEach(cb => { 
+        cb.checked = shouldSelect; 
+        cb.indeterminate = false;
+      });
       updateBranchCount();
       updateSelectAllLabel();
     });
 
     // Add event listeners to branch checkboxes
     treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
-      cb.addEventListener('change', () => { updateBranchCount(); updateSelectAllLabel(); });
+      cb.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        const container = e.target.closest('.tree-node');
+        
+        if (container) {
+          // 1. Cascada hacia abajo
+          const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+          descendantCheckboxes.forEach(childCb => {
+            childCb.checked = isChecked;
+            childCb.indeterminate = false;
+          });
+          
+          // 2. Cascada hacia arriba
+          let parentContainer = container.parentElement.closest('.tree-node');
+          while (parentContainer) {
+            const parentCb = parentContainer.querySelector('.branch-checkbox');
+            if (parentCb) {
+              const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+              if (allDescendants.length > 0) {
+                const allChecked = allDescendants.every(c => c.checked);
+                const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                if (allChecked) {
+                  parentCb.checked = true;
+                  parentCb.indeterminate = false;
+                } else if (someChecked) {
+                  parentCb.checked = false;
+                  parentCb.indeterminate = true;
+                } else {
+                  parentCb.checked = false;
+                  parentCb.indeterminate = false;
+                }
+              }
+            }
+            parentContainer = parentContainer.parentElement.closest('.tree-node');
+          }
+        }
+        
+        updateBranchCount();
+        updateSelectAllLabel();
+      });
     });
 
     // Toggle individual branches using event delegation
@@ -3551,9 +3632,9 @@ const promptForBranchSelection = (pageName, structure) => {
         const indent = indentLevel * 20;
         const deepInfo = node.hasDeepChildren ? ` <span style="color: #888; font-size: 11px;">(+${node.deepChildrenCount} sub-bloques)</span>` : '';
         return `
-          <div style="padding: 4px 0; padding-left: ${indent}px;">
+          <div class="branch-node-container" style="padding: 4px 0; padding-left: ${indent}px;">
             <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 8px;">
-              <input type="checkbox" data-uid="${node.uid}" style="margin-top: 3px; cursor: pointer;">
+              <input type="checkbox" class="branch-checkbox" data-uid="${node.uid}" style="margin-top: 3px; cursor: pointer;">
               <span style="font-size: 13px; line-height: 1.4;" title="${node.fullContent.replace(/"/g, '&quot;')}">${node.content}${deepInfo}</span>
             </label>
             ${node.children && node.children.length > 0 ? renderTree(node.children, indentLevel + 1) : ''}
@@ -3623,14 +3704,52 @@ const promptForBranchSelection = (pageName, structure) => {
 
     // Update selection count
     const updateCount = () => {
-      const checked = treeContainer.querySelectorAll('input[type="checkbox"]:checked');
+      const checked = treeContainer.querySelectorAll('.branch-checkbox:checked');
       const count = checked.length;
       selectionCount.textContent = `${count} rama${count !== 1 ? 's' : ''} seleccionada${count !== 1 ? 's' : ''}`;
     };
 
     // Add event listeners to checkboxes
-    treeContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-      cb.addEventListener('change', updateCount);
+    treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const isChecked = e.target.checked;
+        const container = e.target.closest('.branch-node-container');
+        
+        if (container) {
+          // 1. Cascada hacia abajo: Seleccionar/deseleccionar todos los hijos
+          const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+          descendantCheckboxes.forEach(childCb => {
+            childCb.checked = isChecked;
+            childCb.indeterminate = false;
+          });
+          
+          // 2. Cascada hacia arriba
+          let parentContainer = container.parentElement.closest('.branch-node-container');
+          while (parentContainer) {
+            const parentCb = parentContainer.querySelector('.branch-checkbox');
+            if (parentCb) {
+              const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+              if (allDescendants.length > 0) {
+                const allChecked = allDescendants.every(c => c.checked);
+                const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                if (allChecked) {
+                  parentCb.checked = true;
+                  parentCb.indeterminate = false;
+                } else if (someChecked) {
+                  parentCb.checked = false;
+                  parentCb.indeterminate = true;
+                } else {
+                  parentCb.checked = false;
+                  parentCb.indeterminate = false;
+                }
+              }
+            }
+            parentContainer = parentContainer.parentElement.closest('.branch-node-container');
+          }
+        }
+        
+        updateCount();
+      });
     });
 
     // Filter toggle
@@ -3647,7 +3766,7 @@ const promptForBranchSelection = (pageName, structure) => {
     };
 
     const getSelectedUids = () => {
-      const checked = treeContainer.querySelectorAll('input[type="checkbox"]:checked');
+      const checked = treeContainer.querySelectorAll('.branch-checkbox:checked');
       return Array.from(checked).map(cb => cb.dataset.uid);
     };
 

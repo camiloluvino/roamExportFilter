@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.27.0] - 2026-05-18 12:26
+
+### Added
+- **Selección en cascada inteligente para la pestaña "Por Ramas"**:
+  - Al marcar un bloque padre (nivel superior), se seleccionan automáticamente todas sus ramas hijas e indentadas.
+  - Al desmarcar un bloque padre, se deseleccionan todos sus descendientes de forma automática.
+  - **Estado Indeterminado para Checkboxes**: Si solo algunos sub-bloques de una rama están seleccionados, el checkbox de la rama padre mostrará un estado indeterminado (una barra horizontal `indeterminate`) en lugar de desmarcarse por completo. Esto indica visualmente que la rama contiene elementos seleccionados sin exportar toda la rama.
+  - Al desmarcar manualmente un bloque hijo, el estado de los padres se actualiza automáticamente hacia arriba para ser consistente (pierde la marca total y pasa a indeterminado o desmarcado).
+
 ## [2.26.0] - 2026-05-08 16:55
 
 ### Added

@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-05-08 16:55
+> **Última actualización**: 2026-05-18 12:26
 
 ---
 
 ## Versión actual
 
-**2.26.0** (2026-05-08 16:55)
+**2.27.0** (2026-05-18 12:26)
 
 ---
 
@@ -14,14 +14,14 @@
 
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
-| **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas y buscador de páginas |
+| **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas, buscador y selección en cascada con estado indeterminado |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
 | **Smart Copy (Alt+Shift+C)** | ✅ Estable | Copia bloques visualmente seleccionados |
 | **Export by Root Blocks** | ✅ Estable | Exporta cada bloque raíz como archivo separado |
 | **ZIP Export (>5 files)** | ✅ Estable | Bundling automático con JSZip |
 | **Custom Naming** | ✅ Estable | Opciones de nomenclatura y prevención de duplicados |
-| **Merge Export** | ✅ Nuevo | Combina múltiples ramas en un solo archivo Markdown |
+| **Merge Export** | ✅ Estable | Combina múltiples ramas en un solo archivo Markdown |
 
 ---
 
@@ -39,6 +39,13 @@
 ---
 
 ## Historial reciente
+
+### v2.27.0 (2026-05-18 12:26)
+- Added: **Selección en cascada inteligente para la pestaña "Por Ramas"**.
+  - Al marcar un bloque padre (nivel superior), se seleccionan automáticamente todas sus ramas hijas e indentadas.
+  - Al desmarcar un bloque padre, se deseleccionan todos sus descendientes de forma automática.
+  - **Estado Indeterminado para Checkboxes**: Si solo algunos sub-bloques de una rama están seleccionados, el checkbox de la rama padre mostrará un estado indeterminado (una barra horizontal `indeterminate`) en lugar de desmarcarse por completo. Esto indica visualmente que la rama contiene elementos seleccionados sin exportar toda la rama.
+  - Sincronización hacia arriba: Al desmarcar o marcar un hijo, los padres actualizan su estado (marca completa, marca indeterminada o desmarcado) hacia arriba en el árbol.
 
 ### v2.26.0 (2026-05-08 16:55)
 - Added: **Rediseño de pestaña "Por Ramas"**. Estructura renovada con layout de dos columnas para optimizar el espacio en pantallas grandes.
