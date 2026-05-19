@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-05-18 12:26
+> **Última actualización**: 2026-05-19 01:30
 
 ---
 
 ## Versión actual
 
-**2.27.0** (2026-05-18 12:26)
+**2.28.0** (2026-05-19 01:30)
 
 ---
 
@@ -14,7 +14,7 @@
 
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
-| **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas, buscador y selección en cascada con estado indeterminado |
+| **Smart Export** | ✅ Estable | Modal unificado con 2 pestañas (Por Ramas, Por Páginas) con buscador interactivo y administrador persistente de tags favoritos |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
 | **Smart Copy (Alt+Shift+C)** | ✅ Estable | Copia bloques visualmente seleccionados |
@@ -39,6 +39,19 @@
 ---
 
 ## Historial reciente
+
+### v2.28.0 (2026-05-19 01:30)
+- Added: **Buscador interactivo visual de ramas**.
+  - Permite filtrar ramas en tiempo real con resaltado visual (`<mark>`) de texto coincidente.
+  - Normalización inteligente de acentos y caracteres especiales (búsqueda insensible).
+  - Autodespliegue automático de ramas que contienen subcoincidencias.
+- Added: **Selección masiva de coincidencias**.
+  - Botón dinámico para marcar de un solo golpe todas las ramas visibles resultantes del filtro, respetando y propagando la selección en cascada y estados indeterminados hacia arriba.
+- Added: **Administrador dinámico y persistente de Tags Favoritos**.
+  - Almacenamiento local mediante `localStorage` de tags favoritos, accesible desde la columna derecha de opciones.
+  - CRUD interactivo: añade nuevos tags favoritos directamente con el input e ícono `+` (o pulsando Enter), y elimina tags existentes al instante usando el botón `✕` integrado.
+  - Un clic en el chip de un tag autocompleta el buscador principal superior y filtra todo el árbol visual al instante.
+- Cleaned: Eliminación de pestaña obsoleta "Por Filtros", input de tag de filtrado redundante de post-procesamiento y variables no utilizadas en la inicialización para evitar cualquier error de ejecución.
 
 ### v2.27.0 (2026-05-18 12:26)
 - Added: **Selección en cascada inteligente para la pestaña "Por Ramas"**.

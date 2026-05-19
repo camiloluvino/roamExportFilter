@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.27.0
-// Date: 2026-05-18 12:26
+// Version: 2.28.0
+// Date: 2026-05-19 01:15
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1376,6 +1376,23 @@ const promptUnifiedExport = (pageName, pageUid) => {
   return new Promise((resolve) => {
     let currentDepth = 2; // Default depth
 
+    // Favorite Tags persistent storage helper
+    const getFavoriteTags = () => {
+      const stored = localStorage.getItem('roam-export-favorite-tags');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          // fallback
+        }
+      }
+      return ['textoÍntegro', 'Gemini/Pro/3.0/resumen', 'Gemini/Pro/3.0/respuestas', 'Claude/Sonnet/4.5/resumen', 'Claude/Sonnet/4.5/respuestas', 'Claude/Opus/4.5/respuestas'];
+    };
+
+    const saveFavoriteTags = (tags) => {
+      localStorage.setItem('roam-export-favorite-tags', JSON.stringify(tags));
+    };
+
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.style.cssText = `
@@ -1437,7 +1454,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       return nodes.map(node => {
         const hasChildren = (node.children && node.children.length > 0);
         const childCount = node.hasDeepChildren ? node.deepChildrenCount : (node.children?.length || 0);
-        const deepInfo = childCount > 0 ? ` <span style="color: #888; font-size: 11px;">(+${childCount} sub-bloques)</span>` : '';
+        const deepInfo = childCount > 0 ? ` <span class="tree-deep-info" style="color: #888; font-size: 11px;">(+${childCount} sub-bloques)</span>` : '';
 
         const toggleBtn = hasChildren
           ? `<span class="tree-toggle" data-uid="${node.uid}" style="cursor: pointer; width: 16px; display: inline-flex; justify-content: center; align-items: center; color: #888; font-size: 11px; user-select: none; flex-shrink: 0; padding-top: 4px; transition: transform 0.2s;" title="Expandir/Colapsar">▶</span>`
@@ -1455,7 +1472,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
               ${toggleBtn}
               <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 6px; flex: 1;">
                 <input type="checkbox" data-uid="${node.uid}" class="branch-checkbox" style="margin-top: 3px; cursor: pointer; min-width: 14px;">
-                <span style="font-size: 14px; line-height: 1.5;" title="${(node.fullContent || node.content || '').replace(/"/g, '&quot;')}">${node.content}${deepInfo}</span>
+                <span class="node-text-span" style="font-size: 14px; line-height: 1.5;" title="${(node.fullContent || node.content || '').replace(/"/g, '&quot;')}">${node.content}${deepInfo}</span>
               </label>
             </div>
             ${childrenHtml}
@@ -1463,21 +1480,6 @@ const promptUnifiedExport = (pageName, pageUid) => {
         `;
       }).join('');
     };
-
-    // Favorite tags chips
-    const tagsHtml = FAVORITE_TAGS.map(tag =>
-      `<span class="fav-tag-chip" data-tag="${tag}" style="
-        display: inline-block;
-        padding: 4px 10px;
-        margin: 2px;
-        background: #e8f4fc;
-        color: #137CBD;
-        border-radius: 12px;
-        font-size: 12px;
-        cursor: pointer;
-        transition: background 0.2s;
-      ">#${tag}</span>`
-    ).join('');
 
     // Get initial structure with default depth
     let structure = getPageStructure(pageUid, currentDepth);
@@ -1506,8 +1508,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
           <div style="flex: 0 0 auto;">
             <div style="font-size: 11px; color: #999; padding: 6px 12px 2px 12px; text-align: center;">📍 Esta página</div>
             <div style="display: flex;">
-              <button id="tab-filters" style="${tabStyle(true)}">📋 Por Filtros</button>
-              <button id="tab-branches" style="${tabStyle(false)}">🌳 Por Ramas</button>
+              <button id="tab-branches" style="${tabStyle(true)}">🌳 Por Ramas</button>
             </div>
           </div>
           <!-- Separator -->
@@ -1527,25 +1528,48 @@ const promptUnifiedExport = (pageName, pageUid) => {
       <!-- Tab content container -->
       <div style="padding: 20px; flex: 1; min-height: 0; overflow-y: auto;">
         
-        <!-- Por Filtros content -->
-        <div id="content-filters" style="display: block;">
-          <p style="margin: 0 0 12px 0; font-size: 14px; color: #666;">
-            Exportar bloques que contengan un tag específico:
-          </p>
-          <input type="text" id="unified-tag-input" 
-            style="width: 100%; padding: 12px 14px; font-size: 15px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
-            placeholder="Ej: #resumen, [[concepto]], etc."
-          />
-          <div style="margin-top: 16px;">
-            <p style="margin: 0 0 8px 0; font-size: 13px; color: #888;">Tags favoritos:</p>
-            <div id="fav-tags-container">${tagsHtml}</div>
-          </div>
-        </div>
-        
         <!-- Por Ramas content -->
-        <div id="content-branches" style="display: none; gap: 20px;">
+        <div id="content-branches" style="display: flex; gap: 20px;">
           <!-- Left column: Tree selection -->
           <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+          
+          <!-- Interactive Search & Filtering -->
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <span style="font-size: 13px; font-weight: 600; color: #495057;">🔍 Filtrar Árbol:</span>
+              <input type="text" id="branch-tree-search" 
+                style="flex: 1; padding: 8px 12px; font-size: 13px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; outline: none; transition: border-color 0.2s;"
+                placeholder="Escribe un tag o palabra clave para filtrar el árbol visualmente (ej: #textoÍntegro)..."
+              />
+              <button id="clear-branch-search" style="
+                padding: 8px 14px;
+                font-size: 13px;
+                border: 1px solid #ced4da;
+                border-radius: 4px;
+                background: white;
+                color: #495057;
+                cursor: pointer;
+                display: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#f1f3f5'" onmouseout="this.style.background='white'">
+                Limpiar
+              </button>
+              <button id="select-matching-btn" style="
+                padding: 8px 14px;
+                font-size: 13px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: #137CBD;
+                color: white;
+                cursor: pointer;
+                display: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
+                Seleccionar Coincidencias
+              </button>
+            </div>
+          </div>
+
           <!-- Depth selector -->
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
             <span style="font-size: 13px; color: #666;">Profundidad:</span>
@@ -1608,9 +1632,9 @@ const promptUnifiedExport = (pageName, pageUid) => {
           </div>
           </div>
           <!-- Right column: Export options -->
-          <div style="width: 300px; flex-shrink: 0; overflow-y: auto; max-height: 55vh; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-            <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 14px;">⚙ Opciones de exportación</div>
-            <div style="margin-bottom: 12px;">
+          <div style="width: 300px; flex-shrink: 0; overflow-y: auto; max-height: 55vh; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 12px;">
+            <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px;">⚙ Opciones de exportación</div>
+            <div>
               <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
               <div id="branch-naming-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">
                 <button data-naming="block" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Bloque</button>
@@ -1620,39 +1644,71 @@ const promptUnifiedExport = (pageName, pageUid) => {
               <div id="branch-naming-preview" style="font-size: 11px; color: #888; margin-top: 6px; font-family: monospace;">Ej: nombre_del_bloque.md</div>
             </div>
             
-            <div style="height: 1px; background: #e0e0e0; margin: 12px 0;"></div>
+            <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
 
-            <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
+            <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
               <input type="checkbox" id="merge-export-enabled">
               <span>Combinar en archivo único</span>
             </label>
-            <div id="merge-filename-container" style="display: none; margin-bottom: 8px;">
+            <div id="merge-filename-container" style="display: none; margin-top: -4px;">
               <input type="text" id="merge-filename" 
-                style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 4px;"
+                style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
                 placeholder="nombre_del_archivo"
               />
               <div id="merge-filename-preview" style="font-size: 11px; color: #888; margin-top: 4px; font-family: monospace;">Ej: nombre_pagina_export.md</div>
             </div>
 
-            <div style="height: 1px; background: #e0e0e0; margin: 12px 0;"></div>
+            <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
 
-            <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 8px;">
+            <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
               <input type="checkbox" id="order-prefix-enabled">
               <span>Agregar prefijo de orden (01_, 02_, ...)</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; margin-bottom: 12px; padding-left: 24px; opacity: 0.5;" id="order-descending-label">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding-left: 24px; opacity: 0.5; margin-top: -6px;" id="order-descending-label">
               <input type="checkbox" id="order-descending" disabled>
               <span>Orden descendente (..., 02_, 01_)</span>
             </label>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-              <input type="checkbox" id="branch-filter-enabled">
-              <span>Filtrar por tag (opcional):</span>
-            </label>
-            <input type="text" id="branch-filter-tag" 
-              style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 8px; opacity: 0.5;"
-              placeholder="Ej: #resumen"
-              disabled
-            />
+            
+            <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+
+            <!-- Persistent Favorite Tags Manager -->
+            <div id="favorite-tags-manager" style="display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 13px; color: #666; font-weight: 600; display: flex; align-items: center; gap: 4px;">🏷️ Tags Favoritos:</span>
+              <div id="fav-tags-list-container" style="
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                max-height: 130px;
+                overflow-y: auto;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                background: #fbfbfb;
+                min-height: 48px;
+                align-content: flex-start;
+              ">
+                <!-- Dynamic Chips -->
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <input type="text" id="new-fav-tag-input" 
+                  style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; outline: none;"
+                  placeholder="Agregar tag (ej: resumen)..."
+                />
+                <button id="add-fav-tag-btn" style="
+                  padding: 6px 12px;
+                  font-size: 12px;
+                  border: 1px solid #137CBD;
+                  border-radius: 4px;
+                  background: #137CBD;
+                  color: white;
+                  cursor: pointer;
+                  font-weight: bold;
+                  transition: background 0.2s;
+                " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
+                  +
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -1800,15 +1856,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
     document.body.appendChild(overlay);
 
     // Get elements
-    const tabFilters = document.getElementById('tab-filters');
     const tabBranches = document.getElementById('tab-branches');
     const tabPages = document.getElementById('tab-pages');
-    const contentFilters = document.getElementById('content-filters');
     const contentBranches = document.getElementById('content-branches');
     const contentPages = document.getElementById('content-pages');
-    const tagInput = document.getElementById('unified-tag-input');
-    const branchFilterEnabled = document.getElementById('branch-filter-enabled');
-    const branchFilterTag = document.getElementById('branch-filter-tag');
     const branchNamingSelector = document.getElementById('branch-naming-selector');
     const branchNamingPreview = document.getElementById('branch-naming-preview');
     const orderPrefixEnabled = document.getElementById('order-prefix-enabled');
@@ -1818,7 +1869,6 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const cancelBtn = document.getElementById('unified-cancel');
     const exportBtn = document.getElementById('unified-export');
     const treeContainer = document.getElementById('branch-tree-container');
-    const favTagsContainer = document.getElementById('fav-tags-container');
     const mergeExportEnabled = document.getElementById('merge-export-enabled');
     const mergeExportLabel = document.getElementById('merge-export-label');
     const mergeFilenameContainer = document.getElementById('merge-filename-container');
@@ -1843,7 +1893,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const mdStructureSelector = document.getElementById('md-structure-selector');
     const epubStructureSelector = document.getElementById('epub-structure-selector');
 
-    let activeTab = 'filters';
+    let activeTab = 'branches';
     let selectedFormat = 'md'; // 'md' or 'epub'
     let epubOptions = {
       structure: 'hierarchical',
@@ -1860,20 +1910,13 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const switchTab = (tab) => {
       activeTab = tab;
       // Reset all tabs
-      tabFilters.style.cssText = tabStyle(false);
       tabBranches.style.cssText = tabStyle(false);
       tabPages.style.cssText = tabStyle(false);
-      contentFilters.style.display = 'none';
       contentBranches.style.display = 'none';
       contentPages.style.display = 'none';
       selectionInfo.textContent = '';
 
-      if (tab === 'filters') {
-        tabFilters.style.cssText = tabStyle(true);
-        contentFilters.style.display = 'block';
-        pageNameDisplay.style.display = '';
-        tagInput.focus();
-      } else if (tab === 'branches') {
+      if (tab === 'branches') {
         tabBranches.style.cssText = tabStyle(true);
         contentBranches.style.display = 'flex';
         pageNameDisplay.style.display = '';
@@ -1886,7 +1929,6 @@ const promptUnifiedExport = (pageName, pageUid) => {
       }
     };
 
-    tabFilters.addEventListener('click', () => switchTab('filters'));
     tabBranches.addEventListener('click', () => switchTab('branches'));
     tabPages.addEventListener('click', () => switchTab('pages'));
 
@@ -2086,19 +2128,329 @@ const promptUnifiedExport = (pageName, pageUid) => {
       });
     }
 
-    // Favorite tags click
-    favTagsContainer.querySelectorAll('.fav-tag-chip').forEach(chip => {
-      chip.addEventListener('click', () => {
-        tagInput.value = chip.dataset.tag;
-        tagInput.focus();
+    // === Interactive Search & Filtering logic for Branch Tree ===
+    const branchSearchInput = document.getElementById('branch-tree-search');
+    const clearSearchBtn = document.getElementById('clear-branch-search');
+    const selectMatchingBtn = document.getElementById('select-matching-btn');
+    const branchFavTags = document.getElementById('branch-fav-tags');
+
+    // Accent normalization helper
+    const normalizeText = (text) => {
+      if (!text) return '';
+      return text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // remove accents
+        .replace(/[#\[\]]/g, '') // remove Roam tag brackets and hash
+        .trim();
+    };
+
+    // Helper to highlight matching text inside a text span without breaking sub-spans (like .tree-deep-info)
+    const highlightSpanText = (span, query) => {
+      // Restore original HTML if stored
+      if (span.hasAttribute('data-original-html')) {
+        span.innerHTML = span.getAttribute('data-original-html');
+      } else {
+        // Store it for future restores
+        span.setAttribute('data-original-html', span.innerHTML);
+      }
+
+      if (!query) return;
+
+      const normQuery = normalizeText(query);
+      if (!normQuery) return;
+
+      // We want to highlight only the text content before any nested elements (like tree-deep-info)
+      // Since renderTree returns: <span class="node-text-span">${node.content}${deepInfo}</span>
+      const childNodes = Array.from(span.childNodes);
+      for (const node of childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent;
+          const normText = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+          
+          let index = normText.indexOf(normQuery);
+          if (index !== -1) {
+            const parent = node.parentNode;
+            const fragment = document.createDocumentFragment();
+            let lastIndex = 0;
+            
+            while (index !== -1) {
+              // Find start and end in original text using character normalization mapping
+              let queryIdx = 0;
+              let matchStart = -1;
+              let matchEnd = -1;
+              for (let i = lastIndex; i < text.length; i++) {
+                const normChar = text[i].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                if (normChar === normQuery[queryIdx]) {
+                  if (queryIdx === 0) matchStart = i;
+                  queryIdx++;
+                  if (queryIdx === normQuery.length) {
+                    matchEnd = i + 1;
+                    break;
+                  }
+                } else {
+                  if (queryIdx > 0) {
+                    i = matchStart; // backtrack
+                    queryIdx = 0;
+                    matchStart = -1;
+                  }
+                }
+              }
+              
+              if (matchStart !== -1 && matchEnd !== -1) {
+                // Add part before match
+                if (matchStart > lastIndex) {
+                  fragment.appendChild(document.createTextNode(text.substring(lastIndex, matchStart)));
+                }
+                // Add matched part inside <mark>
+                const mark = document.createElement('mark');
+                mark.className = 'search-highlight';
+                mark.style.cssText = 'background-color: #fef08a; color: #1f2937; padding: 0 2px; border-radius: 2px; font-weight: bold;';
+                mark.textContent = text.substring(matchStart, matchEnd);
+                fragment.appendChild(mark);
+                
+                lastIndex = matchEnd;
+                
+                const remainingText = text.substring(lastIndex);
+                const remainingNorm = remainingText.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                index = remainingNorm.indexOf(normQuery);
+              } else {
+                break;
+              }
+            }
+            
+            if (lastIndex < text.length) {
+              fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+            }
+            
+            parent.replaceChild(fragment, node);
+          }
+        }
+      }
+    };
+
+    // Tree filtering function
+    const filterTreeUI = (query) => {
+      const normQuery = normalizeText(query);
+      
+      if (!normQuery) {
+        // Reset everything
+        clearSearchBtn.style.display = 'none';
+        selectMatchingBtn.style.display = 'none';
+        
+        treeContainer.querySelectorAll('.tree-node').forEach(node => {
+          node.style.display = 'block';
+          const childrenDiv = node.querySelector('.tree-children');
+          if (childrenDiv) {
+            childrenDiv.style.display = 'none';
+          }
+          const toggle = node.querySelector('.tree-toggle');
+          if (toggle) toggle.textContent = '▶';
+          
+          // Restore text spans
+          const textSpan = node.querySelector('.node-text-span');
+          if (textSpan && textSpan.hasAttribute('data-original-html')) {
+            textSpan.innerHTML = textSpan.getAttribute('data-original-html');
+          }
+        });
+        return;
+      }
+      
+      clearSearchBtn.style.display = 'inline-block';
+      selectMatchingBtn.style.display = 'inline-block';
+      
+      const allNodes = Array.from(treeContainer.querySelectorAll('.tree-node'));
+      const reversedNodes = allNodes.slice().reverse();
+      const nodesWithMatchingDescendants = new Set();
+      const directMatches = new Set();
+      
+      // First pass bottom-up: determine matching nodes
+      reversedNodes.forEach(node => {
+        const textSpan = node.querySelector('.node-text-span');
+        if (!textSpan) return;
+        
+        highlightSpanText(textSpan, query);
+        
+        const titleText = textSpan.textContent || '';
+        const normTitleText = normalizeText(titleText);
+        
+        const isDirectMatch = normTitleText.includes(normQuery);
+        const hasMatchingDescendant = Array.from(node.querySelectorAll('.tree-node')).some(childNode => {
+          const childUid = childNode.querySelector('.branch-checkbox')?.dataset.uid;
+          return directMatches.has(childUid) || nodesWithMatchingDescendants.has(childUid);
+        });
+        
+        const uid = node.querySelector('.branch-checkbox')?.dataset.uid;
+        if (uid) {
+          if (isDirectMatch) directMatches.add(uid);
+          if (hasMatchingDescendant) nodesWithMatchingDescendants.add(uid);
+        }
       });
-      chip.addEventListener('mouseenter', () => {
-        chip.style.background = '#cce7f5';
+      
+      // Second pass top-down: display matched/related branches
+      allNodes.forEach(node => {
+        const uid = node.querySelector('.branch-checkbox')?.dataset.uid;
+        const isDirectMatch = directMatches.has(uid);
+        const hasMatchingDescendant = nodesWithMatchingDescendants.has(uid);
+        
+        if (isDirectMatch || hasMatchingDescendant) {
+          node.style.display = 'block';
+          
+          const childrenDiv = node.querySelector('.tree-children');
+          if (childrenDiv && hasMatchingDescendant) {
+            childrenDiv.style.display = 'block';
+            const toggle = node.querySelector('.tree-toggle');
+            if (toggle) toggle.textContent = '▼';
+          }
+        } else {
+          node.style.display = 'none';
+        }
       });
-      chip.addEventListener('mouseleave', () => {
-        chip.style.background = '#e8f4fc';
+    };
+
+    // Select all visible direct matches
+    const selectMatchingNodes = () => {
+      const query = branchSearchInput.value;
+      const normQuery = normalizeText(query);
+      if (!normQuery) return;
+      
+      let selectedCount = 0;
+      
+      const allNodes = treeContainer.querySelectorAll('.tree-node');
+      allNodes.forEach(node => {
+        if (node.style.display === 'none') return;
+        
+        const checkbox = node.querySelector('.branch-checkbox');
+        if (!checkbox) return;
+        
+        const textSpan = node.querySelector('.node-text-span');
+        if (!textSpan) return;
+        
+        const titleText = textSpan.textContent || '';
+        const normTitleText = normalizeText(titleText);
+        
+        if (normTitleText.includes(normQuery)) {
+          if (!checkbox.checked) {
+            checkbox.checked = true;
+            checkbox.dispatchEvent(new Event('change'));
+            selectedCount++;
+          }
+        }
       });
+      
+      if (selectedCount > 0) {
+        showNotification(`✓ Marcadas ${selectedCount} coincidencias`, '#137CBD');
+      } else {
+        showNotification('No hay nuevas coincidencias para seleccionar', '#888');
+      }
+    };
+
+    // Bind search input events
+    branchSearchInput.addEventListener('input', (e) => {
+      filterTreeUI(e.target.value);
     });
+
+    clearSearchBtn.addEventListener('click', () => {
+      branchSearchInput.value = '';
+      filterTreeUI('');
+    });
+
+    selectMatchingBtn.addEventListener('click', selectMatchingNodes);
+
+    // Persistent Dynamic Favorite Tags Manager Logic
+    const renderFavoriteTags = () => {
+      const tags = getFavoriteTags();
+      const container = document.getElementById('fav-tags-list-container');
+      if (!container) return;
+
+      if (tags.length === 0) {
+        container.innerHTML = '<span style="font-size: 11px; color: #888; padding: 4px; font-style: italic;">No hay tags favoritos</span>';
+        return;
+      }
+
+      container.innerHTML = tags.map(tag => `
+        <span class="fav-tag-chip" data-tag="${tag}" style="
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          background: #e8f4fc;
+          color: #137CBD;
+          border-radius: 12px;
+          font-size: 12px;
+          cursor: pointer;
+          transition: all 0.2s;
+          user-select: none;
+        ">
+          <span class="chip-text">#${tag}</span>
+          <span class="remove-fav-tag" data-tag="${tag}" style="
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            color: #a0aec0;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+          " title="Eliminar">✕</span>
+        </span>
+      `).join('');
+
+      // Bind dynamic chip events
+      container.querySelectorAll('.fav-tag-chip').forEach(chip => {
+        const tag = chip.dataset.tag;
+        
+        // Chip text click triggers search
+        chip.querySelector('.chip-text').addEventListener('click', (e) => {
+          e.stopPropagation();
+          branchSearchInput.value = '#' + tag;
+          filterTreeUI('#' + tag);
+          branchSearchInput.focus();
+        });
+
+        // Chip delete click
+        chip.querySelector('.remove-fav-tag').addEventListener('click', (e) => {
+          e.stopPropagation();
+          let tags = getFavoriteTags();
+          tags = tags.filter(t => t !== tag);
+          saveFavoriteTags(tags);
+          renderFavoriteTags();
+        });
+      });
+    };
+
+    // Add tag button click / enter keypress
+    const addBtn = document.getElementById('add-fav-tag-btn');
+    const addInput = document.getElementById('new-fav-tag-input');
+
+    if (addBtn && addInput) {
+      const addNewFavorite = () => {
+        const val = addInput.value.trim().replace(/[#\[\]]/g, '');
+        if (val) {
+          const tags = getFavoriteTags();
+          if (!tags.includes(val)) {
+            tags.push(val);
+            saveFavoriteTags(tags);
+            renderFavoriteTags();
+          }
+          addInput.value = '';
+        }
+      };
+
+      addBtn.addEventListener('click', addNewFavorite);
+      addInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          addNewFavorite();
+        }
+      });
+    }
+
+    // Initial render of favorite tags
+    renderFavoriteTags();
 
     // Branch Naming logic
     let branchNamingStrategy = 'block'; // default
@@ -2196,24 +2548,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
     orderDescending.addEventListener('change', updateNamingPreview);
 
-    // Branch filter toggle
-    branchFilterEnabled.addEventListener('change', () => {
-      branchFilterTag.disabled = !branchFilterEnabled.checked;
-      branchFilterTag.style.opacity = branchFilterEnabled.checked ? '1' : '0.5';
-      if (branchFilterEnabled.checked) {
-        branchFilterTag.focus();
-      } else {
-        // Clear error state when disabling filter
-        filterErrorDiv.style.display = 'none';
-        branchFilterTag.style.borderColor = '#ccc';
-      }
-    });
 
-    // Clear error state when user types in filter tag
-    branchFilterTag.addEventListener('input', () => {
-      filterErrorDiv.style.display = 'none';
-      branchFilterTag.style.borderColor = '#ccc';
-    });
 
     // === Pages tab event listeners ===
     // Update page selection count
@@ -2459,40 +2794,6 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
         // Validate filterTag BEFORE closing modal
         let validatedFilterTag = null;
-        if (branchFilterEnabled.checked) {
-          const tagValue = branchFilterTag.value.trim();
-          if (!tagValue) {
-            branchFilterTag.style.borderColor = '#DC143C';
-            branchFilterTag.focus();
-            return; // Don't close modal
-          }
-          validatedFilterTag = cleanTagInput(tagValue);
-
-          // Check that at least one selected branch contains the tag (content-based)
-          exportBtn.disabled = true;
-          exportBtn.textContent = 'Verificando...';
-          let hasMatches = false;
-          try {
-            for (const uid of selectedUids) {
-              const branchTree = getBlockWithDescendants(uid);
-              if (branchTree && treeContainsTag(branchTree, validatedFilterTag)) {
-                hasMatches = true;
-                break;
-              }
-            }
-          } catch (err) {
-            console.error('Error validating filter tag:', err);
-          }
-          exportBtn.disabled = false;
-          exportBtn.textContent = 'Exportar';
-
-          if (!hasMatches) {
-            filterErrorDiv.textContent = `❌ No se encontró #${validatedFilterTag} en las ${selectedUids.length} rama${selectedUids.length !== 1 ? 's' : ''} seleccionada${selectedUids.length !== 1 ? 's' : ''}`;
-            filterErrorDiv.style.display = 'block';
-            branchFilterTag.style.borderColor = '#DC143C';
-            return; // Don't close modal
-          }
-        }
 
         cleanup();
         resolve({
@@ -2556,30 +2857,20 @@ const promptUnifiedExport = (pageName, pageUid) => {
       }
     });
 
-    // Close on Escape, submit on Enter (for filters tab)
+    // Close on Escape
     const handleKeydown = (e) => {
       if (e.key === 'Escape') {
         cleanup();
         resolve({ cancelled: true });
         document.removeEventListener('keydown', handleKeydown);
       }
-      if (e.key === 'Enter' && activeTab === 'filters' && tagInput.value.trim()) {
-        cleanup();
-        resolve({
-          cancelled: false,
-          mode: 'filters',
-          tagName: cleanTagInput(tagInput.value.trim()),
-          format: selectedFormat,
-          epubOptions: { ...epubOptions },
-          mdOptions: { ...mdOptions }
-        });
-        document.removeEventListener('keydown', handleKeydown);
-      }
     };
     document.addEventListener('keydown', handleKeydown);
 
-    // Focus input on open
-    tagInput.focus();
+    // Focus search input on open
+    if (branchSearchInput) {
+      branchSearchInput.focus();
+    }
   });
 };
 
@@ -2604,50 +2895,7 @@ const unifiedExport = async () => {
       return;
     }
 
-    if (result.mode === 'filters') {
-      // Export by tag filter
-      const tagName = result.tagName;
-      if (!tagName) {
-        showNotification('❌ Invalid tag name', '#DC143C');
-        return;
-      }
-
-      showNotification(`🔍 Searching for #${tagName}...`, '#137CBD');
-
-      const targetBlocks = findBlocksByTag(tagName);
-      if (!targetBlocks || targetBlocks.length === 0) {
-        showNotification(`❌ No blocks found with #${tagName}`, '#DC143C');
-        return;
-      }
-
-      const exportTree = buildExportTree(targetBlocks);
-      if (!exportTree || exportTree.length === 0) {
-        showNotification('❌ Could not build export tree', '#DC143C');
-        return;
-      }
-
-      // Export based on selected format
-      if (result.format === 'epub') {
-        showNotification(`📚 Generando EPUB...`, '#137CBD');
-        const success = await downloadAsEpub(exportTree, `${pageName} - ${tagName}`, result.epubOptions);
-        if (success) {
-          showNotification(`✓ EPUB exportado: ${targetBlocks.length} bloques`, '#28a745');
-        } else {
-          showNotification('❌ Error generando EPUB', '#DC143C');
-        }
-      } else {
-        // Markdown export (default)
-        const markdown = treeToMarkdown(exportTree, 0, result.mdOptions);
-        const header = generateHeader(tagName, targetBlocks.length);
-        const filename = generateFilename(tagName);
-
-        const success = downloadFile(header + markdown, filename);
-        if (success) {
-          showNotification(`✓ Exported ${targetBlocks.length} blocks`, '#28a745');
-        }
-      }
-
-    } else if (result.mode === 'branches') {
+    if (result.mode === 'branches') {
       // Export by branch selection
       const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, epubOptions, mdOptions, branchNamingStrategy = 'block', mergeIntoSingle, mergeFilename } = result;
 
@@ -4248,7 +4496,7 @@ const initExtension = () => {
     });
   }
 
-  console.log("Roam Filter Export extension loaded (v2.20.2)");
+  console.log("Roam Filter Export extension loaded (v2.28.0)");
 };
 
 const cleanupExtension = () => {
