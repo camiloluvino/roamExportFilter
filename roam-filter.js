@@ -306,10 +306,16 @@ const treeContainsTag = (node, tagName) => {
   return false;
 };
 
-// Filter a branch tree to keep only children (sub-branches) that contain the tag.
-// The root node (branch header) is always kept; its children are pruned.
-// If a child doesn't directly have the tag but one of its descendants does,
-// the child is kept as a path to the tag.
+/**
+ * Filter a branch tree to keep only children (sub-branches) that contain the tag.
+ * The root node (branch header) is always kept; its children are pruned.
+ * If a child doesn't directly have the tag but one of its descendants does,
+ * the child is kept as a path to the tag.
+ *
+ * @param {Object} tree - The block node tree to filter
+ * @param {string} tagName - The tag to filter by
+ * @returns {Object|null} The filtered tree, or null if it should be removed entirely
+ */
 const filterTreeByTag = (tree, tagName) => {
   if (!tree || !tagName) return tree;
 
@@ -560,6 +566,13 @@ const FAVORITE_TAGS = [
 ];
 
 
+/**
+ * Builds a unified hierarchical tree structure from a flat list of block nodes.
+ * Used to construct the export tree preserving parent-child relationships and ordering.
+ *
+ * @param {Array<Object>} targetBlocks - Array of raw block objects containing their parents trace
+ * @returns {Array<Object>} Array of root node objects with populated `children` arrays
+ */
 const buildExportTree = (targetBlocks) => {
   if (!targetBlocks || targetBlocks.length === 0) {
     return [];
@@ -791,6 +804,16 @@ const buildExportTree = (targetBlocks) => {
 };
 
 // --- exporter.js ---
+/**
+ * Converts a tree of block nodes to Markdown.
+ * Supports both hierarchical (with bullets/indentation) and flat (paragraphs) formats.
+ *
+ * @param {Array<Object>} trees - Array of root block trees
+ * @param {number} indentLevel - Current indentation level (used for recursion)
+ * @param {Object} options - Formatting options
+ * @param {string} options.structure - 'hierarchical' (default) or 'flat'
+ * @returns {string} The resulting markdown text
+ */
 const treeToMarkdown = (trees, indentLevel = 0, options = {}) => {
   if (!trees || trees.length === 0) {
     return "";

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.28.0] - 2026-05-19 01:30
+
+### Added
+- **Buscador interactivo visual de ramas**: Permite filtrar ramas en tiempo real con resaltado visual (`<mark>`) de texto coincidente. Normalización inteligente de acentos y autodespliegue.
+- **Selección masiva de coincidencias**: Botón dinámico para marcar de un solo golpe todas las ramas visibles resultantes del filtro, respetando y propagando la selección en cascada y estados indeterminados hacia arriba.
+- **Administrador dinámico y persistente de Tags Favoritos**: Almacenamiento local mediante `localStorage` de tags favoritos, accesible desde la columna derecha de opciones. Permite añadir y eliminar tags al instante. Un clic en el chip de un tag autocompleta el buscador principal superior.
+
+### Cleaned
+- Eliminación de pestaña obsoleta "Por Filtros", input de tag de filtrado redundante de post-procesamiento y variables no utilizadas en la inicialización para evitar cualquier error de ejecución.
+
+---
+
 ## [2.27.0] - 2026-05-18 12:26
 
 ### Added

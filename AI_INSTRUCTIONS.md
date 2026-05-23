@@ -25,12 +25,13 @@ s.src = 'https://camiloluvino.github.io/roamFilter/roam-filter.js';
 
 ```
 roamExportFilter/
-├── .internal/              ← Gestión del proyecto (STATUS, AI_INSTRUCTIONS)
 ├── docs/                   ← Documentación adicional (CHANGELOG)
 ├── tests/                  ← Suite de tests (tests.html)
 ├── reference/              ← Archivos de referencia (documentación Roam API)
 ├── roam-filter.js          ← ÚNICA FUENTE DE VERDAD
-├── extension.json          ← Metadata del plugin (legacy)
+├── roam_loader.js          ← Script local para pruebas y carga del plugin
+├── AI_INSTRUCTIONS.md      ← Reglas y lineamientos para Vibe Coding
+├── STATUS.md               ← Estado actual del proyecto y pendientes
 ├── README.md               ← Documentación usuario
 └── .gitignore              ← Archivos ignorados por Git
 ```
@@ -39,7 +40,7 @@ roamExportFilter/
 
 1. Actualiza la versión y fecha en las líneas 1-3 del archivo.
 2. Actualiza `docs/CHANGELOG.md` con los cambios realizados.
-3. Actualiza `.internal/STATUS.md` al final de la sesión.
+3. Actualiza `STATUS.md` al final de la sesión.
 4. Haz push a GitHub para que los cambios se reflejen en GitHub Pages.
 
 ---
@@ -61,10 +62,13 @@ Busca estos comentarios en el código para ubicar cada sección:
 - **VISUAL SELECTION COPY** - Alt+Shift+C para bloques seleccionados
 - **EXTENSION INITIALIZATION** - Registro de comandos y cleanup
 
-### Flujo de dependencias:
-- Las funciones de `queries.js` son usadas por `tree-builder.js` y `export-by-root.js`
-- `tree-builder.js` produce estructuras consumidas por `exporter.js`
-- `MAIN EXTENSION LOGIC` orquesta todo usando funciones de todas las secciones
+### Flujo de Datos y Arquitectura:
+El flujo general de los datos en una exportación:
+1. **Query**: Consultas Datalog usando `window.roamAlphaAPI.data.q` filtran los bloques.
+2. **Blocks**: `window.roamAlphaAPI.pull` obtiene el árbol completo de cada bloque.
+3. **Tree**: `tree-builder.js` transforma la salida plana/invertida de Roam en una jerarquía JSON.
+4. **Markdown/EPUB**: `exporter.js` o el generador EPUB transforman el árbol al formato final.
+5. **Download/ZIP**: Se descarga un archivo único o se empaqueta con JSZip.
 
 ---
 
@@ -83,11 +87,11 @@ s.src = 'https://camiloluvino.github.io/roamFilter/roam-filter.js';
 
 ### Variable DEBUG
 
-Línea ~386. Habilita logs extensivos en consola. En producción debería ser `false`, pero se mantiene `true` para desarrollo activo.
+Línea ~549. Habilita logs extensivos en consola. En producción debería ser `false`, pero se mantiene `true` para desarrollo activo.
 
 ### Constante FAVORITE_TAGS
 
-Línea ~390. Lista editable de tags frecuentes para el modal de export by root blocks.
+Línea ~553. Lista editable de tags frecuentes para el modal de export by root blocks.
 
 ---
 
@@ -250,8 +254,20 @@ Un error fatal al cargar (ej: dependencia fallida) puede enmascarar errores en t
 
 ---
 
+## Glosario del Dominio (Roam Research)
+
+- **Block (Bloque)**: Unidad básica en Roam. Cada viñeta es un bloque con un `uid`.
+- **Page (Página)**: Contenedor superior de bloques. También tiene un `uid`.
+- **Branch (Rama)**: Un bloque padre y todos sus bloques hijos (descendientes indentados).
+- **Root Block (Bloque Raíz)**: Un bloque que es hijo directo de la página (no está indentado bajo otro bloque).
+- **Daily Notes**: Páginas especiales creadas por día (ej. "February 20th, 2026").
+- **Namespace Pages**: Páginas con "/" en el título (ej. "entrevista/real").
+- **Datalog**: Lenguaje de consultas para la base de datos de Roam (usado en `window.roamAlphaAPI.data.q`).
+
+---
+
 ## Referencias adicionales
 
 - `reference/RoamResearch-developer-documentation-*.json`: Documentación oficial de la API
-- `tests/tests.html`: Suite de tests unitarios
+- `tests/tests.html`: Suite de tests unitarios ligeros
 - `docs/CHANGELOG.md`: Historial detallado de cambios

@@ -37,6 +37,10 @@ document.head.appendChild(s);
 
 4. Refresca la página
 
+### Desarrollo Local (Opcional)
+
+Si estás modificando el código localmente, puedes usar el script `roam_loader.js` (cargándolo localmente en tu navegador) para probar los cambios sin necesidad de hacer push a GitHub Pages cada vez.
+
 ## Desinstalar
 
 ```javascript
