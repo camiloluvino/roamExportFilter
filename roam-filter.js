@@ -1438,8 +1438,9 @@ const promptUnifiedExport = (pageName, pageUid) => {
       padding: 0;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      min-width: 1100px;
-      max-width: 1200px;
+      min-width: 1200px;
+      width: 90vw;
+      max-width: 1400px;
       max-height: 90vh;
       display: flex;
       flex-direction: column;
@@ -1552,7 +1553,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       <div style="padding: 20px; flex: 1; min-height: 0; overflow-y: auto;">
         
         <!-- Por Ramas content -->
-        <div id="content-branches" style="display: flex; gap: 20px;">
+        <div id="content-branches" style="display: flex; gap: 32px;">
           <!-- Left column: Tree selection -->
           <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
           
@@ -1593,53 +1594,56 @@ const promptUnifiedExport = (pageName, pageUid) => {
             </div>
           </div>
 
-          <!-- Depth selector -->
-          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-            <span style="font-size: 13px; color: #666;">Profundidad:</span>
-            <div id="depth-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-              <button data-depth="1" style="${depthBtnStyle(false)}border-radius: 4px 0 0 4px;">1</button>
-              <button data-depth="2" style="${depthBtnStyle(true)}border-left: none;">2</button>
-              <button data-depth="3" style="${depthBtnStyle(false)}border-left: none;">3</button>
-              <button data-depth="4" style="${depthBtnStyle(false)}border-left: none; border-radius: 0 4px 4px 0;">4</button>
+          <!-- Controls Bar: Depth and Branch Selection -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
+            <!-- Depth selector -->
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 13px; color: #666;">Profundidad:</span>
+              <div id="depth-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
+                <button data-depth="1" style="${depthBtnStyle(false)}border-radius: 4px 0 0 4px;">1</button>
+                <button data-depth="2" style="${depthBtnStyle(true)}border-left: none;">2</button>
+                <button data-depth="3" style="${depthBtnStyle(false)}border-left: none;">3</button>
+                <button data-depth="4" style="${depthBtnStyle(false)}border-left: none; border-radius: 0 4px 4px 0;">4</button>
+              </div>
+              <span style="font-size: 12px; color: #999;">niveles de jerarquía</span>
             </div>
-            <span style="font-size: 12px; color: #999;">niveles de jerarquía</span>
-          </div>
-          
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <p style="margin: 0; font-size: 14px; color: #666;">
-              Selecciona las ramas que deseas exportar:
-            </p>
-            <div style="display: flex; gap: 8px;">
-              <button id="expand-all-branches" style="
-                padding: 4px 12px;
-                font-size: 12px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                background: white;
-                color: #666;
-                cursor: pointer;
-                transition: all 0.2s;
-              ">⊞ Expandir todo</button>
-              <button id="collapse-all-branches" style="
-                padding: 4px 12px;
-                font-size: 12px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                background: white;
-                color: #666;
-                cursor: pointer;
-                transition: all 0.2s;
-              ">⊟ Colapsar todo</button>
-              <button id="select-all-branches" style="
-                padding: 4px 12px;
-                font-size: 12px;
-                border: 1px solid #137CBD;
-                border-radius: 4px;
-                background: white;
-                color: #137CBD;
-                cursor: pointer;
-                transition: all 0.2s;
-              ">☑ Seleccionar todo</button>
+            
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 13px; color: #666;">
+                Selecciona las ramas que deseas exportar:
+              </span>
+              <div style="display: flex; gap: 8px;">
+                <button id="expand-all-branches" style="
+                  padding: 4px 12px;
+                  font-size: 12px;
+                  border: 1px solid #ccc;
+                  border-radius: 4px;
+                  background: white;
+                  color: #666;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                ">⊞ Expandir todo</button>
+                <button id="collapse-all-branches" style="
+                  padding: 4px 12px;
+                  font-size: 12px;
+                  border: 1px solid #ccc;
+                  border-radius: 4px;
+                  background: white;
+                  color: #666;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                ">⊟ Colapsar todo</button>
+                <button id="select-all-branches" style="
+                  padding: 4px 12px;
+                  font-size: 12px;
+                  border: 1px solid #137CBD;
+                  border-radius: 4px;
+                  background: white;
+                  color: #137CBD;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                ">☑ Seleccionar todo</button>
+              </div>
             </div>
           </div>
           <div id="branch-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
@@ -1647,7 +1651,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 12px;
-            max-height: 55vh;
+            max-height: calc(90vh - 250px);
             overflow-y: auto;
             background: #fafafa;
           ">
@@ -1655,7 +1659,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
           </div>
           </div>
           <!-- Right column: Export options -->
-          <div style="width: 300px; flex-shrink: 0; overflow-y: auto; max-height: 55vh; padding: 16px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 12px;">
+          <div style="width: 260px; flex-shrink: 0; overflow-y: auto; max-height: calc(90vh - 250px); padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 8px;">
             <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px;">⚙ Opciones de exportación</div>
             <div>
               <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
@@ -1775,7 +1779,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
             border: 1px solid #e0e0e0;
             border-radius: 4px;
             padding: 12px;
-            max-height: 350px;
+            max-height: calc(90vh - 250px);
             overflow-y: auto;
             background: #fafafa;
           ">
@@ -1797,7 +1801,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       </div>
       
       <!-- Format Options (above footer) -->
-      <div id="format-options-container" style="padding: 12px 20px; border-top: 1px solid #e0e0e0; background: #f9f9f9; flex-shrink: 0;">
+      <div id="format-options-container" style="padding: 8px 20px; border-top: 1px solid #e0e0e0; background: #f9f9f9; flex-shrink: 0;">
         <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 13px; color: #666;">Formato:</span>
@@ -1809,7 +1813,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         </div>
         
         <!-- Markdown Options Panel (visible by default) -->
-        <div id="md-options-panel" style="display: block; margin-top: 12px; padding: 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
+        <div id="md-options-panel" style="display: block; margin-top: 8px; padding: 8px 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
           <div style="display: flex; flex-wrap: wrap; gap: 20px;">
             <div>
               <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Estructura:</span>
@@ -1822,7 +1826,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         </div>
 
         <!-- EPUB Options Panel (hidden by default) -->
-        <div id="epub-options-panel" style="display: none; margin-top: 12px; padding: 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
+        <div id="epub-options-panel" style="display: none; margin-top: 8px; padding: 8px 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
           <div style="display: flex; flex-wrap: wrap; gap: 20px;">
             <div>
               <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Estructura:</span>

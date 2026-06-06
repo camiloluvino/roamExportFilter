@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.29.0] - 2026-06-06 13:25
+
+### Added
+- **Rediseño completo de la interfaz de exportación (Smart Export Modal)**:
+  - Se agrandó la ventana principal para pantallas modernas (ancho mínimo `1200px` y máximo `1400px` o `90vw`).
+  - Mayor espacio y separación (de `20px` a `32px` de gap) entre la sección de contenidos y la de opciones para mejorar la estética.
+  - El panel central (tanto árbol como lista de páginas) ahora aprovecha al máximo el espacio vertical con altura dinámica (`calc(90vh - 250px)`).
+  - Compactada la columna de opciones a `260px` y reducida la separación interna de controles (`gap` a `8px` y `padding` a `12px`).
+  - La barra horizontal inferior (Formatos y Estructura) se compactó reduciendo paddings y márgenes para ganar espacio vertical útil.
+  - Reorganización de la barra de controles superior (profundidad y botones de selección/colapso masivo) en una sola fila horizontal para optimizar el espacio visual.
+
+---
+
 ## [2.28.0] - 2026-05-19 01:30
 
 ### Added

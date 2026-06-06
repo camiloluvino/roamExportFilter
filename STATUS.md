@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-05-19 01:30
+> **Última actualización**: 2026-06-06 13:25
 
 ---
 
 ## Versión actual
 
-**2.28.0** (2026-05-19 01:30)
+**2.29.0** (2026-06-06 13:25)
 
 ---
 
@@ -39,6 +39,15 @@
 ---
 
 ## Historial reciente
+
+### v2.29.0 (2026-06-06 13:25)
+- Added: **Rediseño de interfaz de exportación (Smart Export Modal)**.
+  - Agrandada la ventana principal (ancho adaptable hasta 1400px o 90vw) para mayor comodidad visual.
+  - Aumento de la separación entre la columna del árbol de contenidos y la columna de opciones a `32px`.
+  - El panel central (árbol y páginas) ahora aprovecha el 90% del espacio vertical con altura dinámica (`calc(90vh - 250px)`).
+  - Compactada la columna de opciones derecha a 260px con menor margen y espaciado (gap 8px, padding 12px).
+  - Compactación de la barra de formatos inferior.
+  - Reubicación del selector de profundidad y botones de selección masiva en una sola barra horizontal.
 
 ### v2.28.0 (2026-05-19 01:30)
 - Added: **Buscador interactivo visual de ramas**.
