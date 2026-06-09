@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.29.0
-// Date: 2026-06-06 13:25
+// Version: 2.30.0
+// Date: 2026-06-08 21:47
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1550,65 +1550,65 @@ const promptUnifiedExport = (pageName, pageUid) => {
       </div>
       
       <!-- Tab content container -->
-      <div style="padding: 20px; flex: 1; min-height: 0; overflow-y: auto;">
+      <div style="padding: 20px; flex: 1; min-height: 0; display: flex; gap: 32px; overflow: hidden;">
         
-        <!-- Por Ramas content -->
-        <div id="content-branches" style="display: flex; gap: 32px;">
-          <!-- Left column: Tree selection -->
-          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+        <!-- Left column: holds active tab content -->
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%;">
           
-          <!-- Interactive Search & Filtering -->
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; padding: 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef;">
-            <div style="display: flex; gap: 8px; align-items: center;">
-              <span style="font-size: 13px; font-weight: 600; color: #495057;">🔍 Filtrar Árbol:</span>
-              <input type="text" id="branch-tree-search" 
-                style="flex: 1; padding: 8px 12px; font-size: 13px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; outline: none; transition: border-color 0.2s;"
-                placeholder="Escribe un tag o palabra clave para filtrar el árbol visualmente (ej: #textoÍntegro)..."
-              />
-              <button id="clear-branch-search" style="
-                padding: 8px 14px;
-                font-size: 13px;
-                border: 1px solid #ced4da;
-                border-radius: 4px;
-                background: white;
-                color: #495057;
-                cursor: pointer;
-                display: none;
-                transition: all 0.2s;
-              " onmouseover="this.style.background='#f1f3f5'" onmouseout="this.style.background='white'">
-                Limpiar
-              </button>
-              <button id="select-matching-btn" style="
-                padding: 8px 14px;
-                font-size: 13px;
-                border: 1px solid #137CBD;
-                border-radius: 4px;
-                background: #137CBD;
-                color: white;
-                cursor: pointer;
-                display: none;
-                transition: all 0.2s;
-              " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
-                Seleccionar Coincidencias
-              </button>
-            </div>
-          </div>
-
-          <!-- Controls Bar: Depth and Branch Selection -->
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
-            <!-- Depth selector -->
-            <div style="display: flex; align-items: center; gap: 12px;">
-              <span style="font-size: 13px; color: #666;">Profundidad:</span>
-              <div id="depth-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-                <button data-depth="1" style="${depthBtnStyle(false)}border-radius: 4px 0 0 4px;">1</button>
-                <button data-depth="2" style="${depthBtnStyle(true)}border-left: none;">2</button>
-                <button data-depth="3" style="${depthBtnStyle(false)}border-left: none;">3</button>
-                <button data-depth="4" style="${depthBtnStyle(false)}border-left: none; border-radius: 0 4px 4px 0;">4</button>
+          <!-- Por Ramas content -->
+          <div id="content-branches" style="display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;">
+            <!-- Interactive Search & Filtering + Depth Selector -->
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; flex-wrap: wrap;">
+              <!-- Search field -->
+              <div style="display: flex; gap: 8px; align-items: center; flex: 1; min-width: 300px;">
+                <span style="font-size: 13px; font-weight: 600; color: #495057; white-space: nowrap;">🔍 Filtrar Árbol:</span>
+                <input type="text" id="branch-tree-search" 
+                  style="flex: 1; padding: 8px 12px; font-size: 13px; border: 1px solid #ced4da; border-radius: 4px; box-sizing: border-box; outline: none; transition: border-color 0.2s;"
+                  placeholder="Escribe un tag o palabra clave para filtrar el árbol visualmente (ej: #textoÍntegro)..."
+                />
+                <button id="clear-branch-search" style="
+                  padding: 8px 14px;
+                  font-size: 13px;
+                  border: 1px solid #ced4da;
+                  border-radius: 4px;
+                  background: white;
+                  color: #495057;
+                  cursor: pointer;
+                  display: none;
+                  transition: all 0.2s;
+                " onmouseover="this.style.background='#f1f3f5'" onmouseout="this.style.background='white'">
+                  Limpiar
+                </button>
+                <button id="select-matching-btn" style="
+                  padding: 8px 14px;
+                  font-size: 13px;
+                  border: 1px solid #137CBD;
+                  border-radius: 4px;
+                  background: #137CBD;
+                  color: white;
+                  cursor: pointer;
+                  display: none;
+                  transition: all 0.2s;
+                " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
+                  Seleccionar Coincidencias
+                </button>
               </div>
-              <span style="font-size: 12px; color: #999;">niveles de jerarquía</span>
+              
+              <!-- Depth selector -->
+              <div style="display: flex; align-items: center; gap: 8px; flex-shrink: 0;">
+                <span style="font-size: 13px; color: #666; white-space: nowrap;">Profundidad:</span>
+                <div id="depth-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
+                  <button data-depth="1" style="${depthBtnStyle(false)}border-radius: 4px 0 0 4px;">1</button>
+                  <button data-depth="2" style="${depthBtnStyle(true)}border-left: none;">2</button>
+                  <button data-depth="3" style="${depthBtnStyle(false)}border-left: none;">3</button>
+                  <button data-depth="4" style="${depthBtnStyle(false)}border-left: none; border-radius: 0 4px 4px 0;">4</button>
+                </div>
+                <span style="font-size: 12px; color: #999; white-space: nowrap;">niveles de jerarquía</span>
+              </div>
             </div>
-            
-            <div style="display: flex; align-items: center; gap: 12px;">
+
+            <!-- Controls Bar: Branch Selection -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 12px;">
               <span style="font-size: 13px; color: #666;">
                 Selecciona las ramas que deseas exportar:
               </span>
@@ -1645,222 +1645,219 @@ const promptUnifiedExport = (pageName, pageUid) => {
                 ">☑ Seleccionar todo</button>
               </div>
             </div>
-          </div>
-          <div id="branch-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
-          <div id="branch-tree-container" style="
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 12px;
-            max-height: calc(90vh - 250px);
-            overflow-y: auto;
-            background: #fafafa;
-          ">
-            ${renderTree(structure)}
-          </div>
-          </div>
-          <!-- Right column: Export options -->
-          <div style="width: 260px; flex-shrink: 0; overflow-y: auto; max-height: calc(90vh - 250px); padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 8px;">
-            <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px;">⚙ Opciones de exportación</div>
-            <div>
-              <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
-              <div id="branch-naming-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">
-                <button data-naming="block" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Bloque</button>
-                <button data-naming="page_block" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer;">Página + Bloque</button>
-                <button data-naming="page" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Página</button>
-              </div>
-              <div id="branch-naming-preview" style="font-size: 11px; color: #888; margin-top: 6px; font-family: monospace;">Ej: nombre_del_bloque.md</div>
+            <div id="branch-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
+            <div id="branch-tree-container" style="
+              border: 1px solid #e0e0e0;
+              border-radius: 4px;
+              padding: 12px;
+              flex: 1;
+              min-height: 0;
+              overflow-y: auto;
+              background: #fafafa;
+            ">
+              ${renderTree(structure)}
             </div>
-            
-            <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
-
-            <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-              <input type="checkbox" id="merge-export-enabled">
-              <span>Combinar en archivo único</span>
-            </label>
-            <div id="merge-filename-container" style="display: none; margin-top: -4px;">
-              <input type="text" id="merge-filename" 
-                style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
-                placeholder="nombre_del_archivo"
+          </div>
+          
+          <!-- Por Páginas content -->
+          <div id="content-pages" style="display: none; flex-direction: column; flex: 1; min-height: 0; height: 100%;">
+            <!-- Search bar -->
+            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+              <input type="text" id="page-search-input" 
+                style="flex: 1; padding: 10px 14px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
+                placeholder="🔍 Buscar páginas por nombre..."
               />
-              <div id="merge-filename-preview" style="font-size: 11px; color: #888; margin-top: 4px; font-family: monospace;">Ej: nombre_pagina_export.md</div>
-            </div>
-
-            <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
-
-            <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-              <input type="checkbox" id="order-prefix-enabled">
-              <span>Agregar prefijo de orden (01_, 02_, ...)</span>
-            </label>
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding-left: 24px; opacity: 0.5; margin-top: -6px;" id="order-descending-label">
-              <input type="checkbox" id="order-descending" disabled>
-              <span>Orden descendente (..., 02_, 01_)</span>
-            </label>
-            
-            <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
-
-            <!-- Persistent Favorite Tags Manager -->
-            <div id="favorite-tags-manager" style="display: flex; flex-direction: column; gap: 8px;">
-              <span style="font-size: 13px; color: #666; font-weight: 600; display: flex; align-items: center; gap: 4px;">🏷️ Tags Favoritos:</span>
-              <div id="fav-tags-list-container" style="
-                display: flex;
-                flex-wrap: wrap;
-                gap: 6px;
-                max-height: 130px;
-                overflow-y: auto;
-                padding: 8px;
-                border: 1px solid #ddd;
+              <button id="page-search-btn" style="
+                padding: 10px 16px;
+                font-size: 13px;
+                border: 1px solid #137CBD;
                 border-radius: 4px;
-                background: #fbfbfb;
-                min-height: 48px;
-                align-content: flex-start;
-              ">
-                <!-- Dynamic Chips -->
-              </div>
-              <div style="display: flex; gap: 6px;">
-                <input type="text" id="new-fav-tag-input" 
-                  style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; outline: none;"
-                  placeholder="Agregar tag (ej: resumen)..."
-                />
-                <button id="add-fav-tag-btn" style="
-                  padding: 6px 12px;
-                  font-size: 12px;
-                  border: 1px solid #137CBD;
-                  border-radius: 4px;
-                  background: #137CBD;
-                  color: white;
-                  cursor: pointer;
-                  font-weight: bold;
-                  transition: background 0.2s;
-                " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
-                  +
-                </button>
-              </div>
+                background: #137CBD;
+                color: white;
+                cursor: pointer;
+                transition: all 0.2s;
+                white-space: nowrap;
+              ">Buscar</button>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <p style="margin: 0; font-size: 14px; color: #666;">
+                Selecciona las páginas que deseas exportar:
+              </p>
+              <button id="select-all-pages" style="
+                padding: 4px 12px;
+                font-size: 12px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: white;
+                color: #137CBD;
+                cursor: pointer;
+                transition: all 0.2s;
+              ">☑ Seleccionar todo</button>
+            </div>
+            <div id="page-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
+            <div id="pages-list-container" style="
+              border: 1px solid #e0e0e0;
+              border-radius: 4px;
+              padding: 12px;
+              flex: 1;
+              min-height: 0;
+              overflow-y: auto;
+              background: #fafafa;
+            ">
+              ${renderPagesList(childPages)}
+            </div>
+            <div style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 4px; flex-shrink: 0;">
+              <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                <input type="checkbox" id="page-filter-enabled">
+                <span>Filtrar por tag (opcional):</span>
+              </label>
+              <input type="text" id="page-filter-tag" 
+                style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 8px; opacity: 0.5;"
+                placeholder="Ej: #resumen"
+                disabled
+              />
             </div>
           </div>
+
         </div>
-        
-        <!-- Por Páginas content -->
-        <div id="content-pages" style="display: none;">
-          <!-- Search bar -->
-          <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-            <input type="text" id="page-search-input" 
-              style="flex: 1; padding: 10px 14px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
-              placeholder="🔍 Buscar páginas por nombre..."
+
+        <!-- Right column: Export options & Format settings (Global & Persistent) -->
+        <div style="width: 280px; flex-shrink: 0; overflow-y: auto; max-height: 100%; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 12px;">
+          <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px;">⚙ Opciones de exportación</div>
+          <div>
+            <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
+            <div id="branch-naming-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">
+              <button data-naming="block" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Bloque</button>
+              <button data-naming="page_block" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer;">Pág.+Bloque</button>
+              <button data-naming="page" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Página</button>
+            </div>
+            <div id="branch-naming-preview" style="font-size: 11px; color: #888; margin-top: 6px; font-family: monospace;">Ej: nombre_del_bloque.md</div>
+          </div>
+          
+          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+
+          <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+            <input type="checkbox" id="merge-export-enabled">
+            <span>Combinar en archivo único</span>
+          </label>
+          <div id="merge-filename-container" style="display: none; margin-top: -4px;">
+            <input type="text" id="merge-filename" 
+              style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
+              placeholder="nombre_del_archivo"
             />
-            <button id="page-search-btn" style="
-              padding: 10px 16px;
-              font-size: 13px;
-              border: 1px solid #137CBD;
+            <div id="merge-filename-preview" style="font-size: 11px; color: #888; margin-top: 4px; font-family: monospace;">Ej: nombre_pagina_export.md</div>
+          </div>
+
+          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+
+          <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+            <input type="checkbox" id="order-prefix-enabled">
+            <span>Agregar prefijo de orden (01_, 02_, ...)</span>
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding-left: 24px; opacity: 0.5; margin-top: -6px;" id="order-descending-label">
+            <input type="checkbox" id="order-descending" disabled>
+            <span>Orden descendente (..., 02_, 01_)</span>
+          </label>
+          
+          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+
+          <!-- Persistent Favorite Tags Manager -->
+          <div id="favorite-tags-manager" style="display: flex; flex-direction: column; gap: 8px;">
+            <span style="font-size: 13px; color: #666; font-weight: 600; display: flex; align-items: center; gap: 4px;">🏷️ Tags Favoritos:</span>
+            <div id="fav-tags-list-container" style="
+              display: flex;
+              flex-wrap: wrap;
+              gap: 6px;
+              max-height: 130px;
+              overflow-y: auto;
+              padding: 8px;
+              border: 1px solid #ddd;
               border-radius: 4px;
-              background: #137CBD;
-              color: white;
-              cursor: pointer;
-              transition: all 0.2s;
-              white-space: nowrap;
-            ">Buscar</button>
+              background: #fbfbfb;
+              min-height: 48px;
+              align-content: flex-start;
+            ">
+              <!-- Dynamic Chips -->
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="new-fav-tag-input" 
+                style="flex: 1; padding: 6px 10px; font-size: 12px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; outline: none;"
+                placeholder="Agregar tag (ej: resumen)..."
+              />
+              <button id="add-fav-tag-btn" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: #137CBD;
+                color: white;
+                cursor: pointer;
+                font-weight: bold;
+                transition: background 0.2s;
+              " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
+                +
+              </button>
+            </div>
           </div>
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <p style="margin: 0; font-size: 14px; color: #666;">
-              Selecciona las páginas que deseas exportar:
-            </p>
-            <button id="select-all-pages" style="
-              padding: 4px 12px;
-              font-size: 12px;
-              border: 1px solid #137CBD;
-              border-radius: 4px;
-              background: white;
-              color: #137CBD;
-              cursor: pointer;
-              transition: all 0.2s;
-            ">☑ Seleccionar todo</button>
-          </div>
-          <div id="page-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
-          <div id="pages-list-container" style="
-            border: 1px solid #e0e0e0;
-            border-radius: 4px;
-            padding: 12px;
-            max-height: calc(90vh - 250px);
-            overflow-y: auto;
-            background: #fafafa;
-          ">
-            ${renderPagesList(childPages)}
-          </div>
-          <div style="margin-top: 12px; padding: 12px; background: #f5f5f5; border-radius: 4px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
-              <input type="checkbox" id="page-filter-enabled">
-              <span>Filtrar por tag (opcional):</span>
-            </label>
-            <input type="text" id="page-filter-tag" 
-              style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; margin-top: 8px; opacity: 0.5;"
-              placeholder="Ej: #resumen"
-              disabled
-            />
+
+          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+
+          <!-- Format Options (Moved here) -->
+          <div id="format-options-container" style="display: flex; flex-direction: column; gap: 8px;">
+            <div>
+              <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Formato:</span>
+              <div id="format-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">
+                <button data-format="md" class="format-btn" style="padding: 6px 14px; font-size: 13px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Markdown</button>
+                <button data-format="epub" class="format-btn" style="padding: 6px 14px; font-size: 13px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">EPUB</button>
+              </div>
+            </div>
+            
+            <!-- Markdown Options Panel (visible by default) -->
+            <div id="md-options-panel" style="display: block; padding: 8px 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
+              <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Estructura:</span>
+              <div id="md-structure-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: 100%;">
+                <button data-structure="hierarchical" class="active" style="flex: 1; padding: 4px 6px; font-size: 11px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px; white-space: nowrap;">Jerárquico</button>
+                <button data-structure="flat" style="flex: 1; padding: 4px 6px; font-size: 11px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0; white-space: nowrap;">Plano</button>
+              </div>
+            </div>
+
+            <!-- EPUB Options Panel (hidden by default) -->
+            <div id="epub-options-panel" style="display: none; padding: 8px 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
+              <div style="margin-bottom: 8px;">
+                <span style="font-size: 11px; color: #666; display: block; margin-bottom: 4px;">Estructura:</span>
+                <div id="epub-structure-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: 100%;">
+                  <button data-structure="hierarchical" class="active" style="flex: 1; padding: 4px 6px; font-size: 11px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px; white-space: nowrap;">Jerárquico</button>
+                  <button data-structure="flat" style="flex: 1; padding: 4px 6px; font-size: 11px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0; white-space: nowrap;">Plano</button>
+                </div>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <span style="font-size: 11px; color: #666; display: block; margin-bottom: 4px;">Espaciado bloques:</span>
+                <div id="block-spacing-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: 100%;">
+                  <button data-spacing="compact" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #ccc; background: white; color: #666; cursor: pointer; border-radius: 4px 0 0 4px;">Compacto</button>
+                  <button data-spacing="normal" class="active" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #137CBD; border-left: none; background: #137CBD; color: white; cursor: pointer;">Normal</button>
+                  <button data-spacing="wide" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Amplio</button>
+                </div>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <span style="font-size: 11px; color: #666; display: block; margin-bottom: 4px;">Al cambiar nivel:</span>
+                <div id="level-spacing-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: 100%;">
+                  <button data-spacing="none" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #ccc; background: white; color: #666; cursor: pointer; border-radius: 4px 0 0 4px;">Ninguno</button>
+                  <button data-spacing="subtle" class="active" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #137CBD; border-left: none; background: #137CBD; color: white; cursor: pointer;">Sutil</button>
+                  <button data-spacing="marked" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Marcado</button>
+                </div>
+              </div>
+              <div>
+                <span style="font-size: 11px; color: #666; display: block; margin-bottom: 4px;">Indicador niveles:</span>
+                <div id="level-indicator-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: 100%;">
+                  <button data-indicator="indent" class="active" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Indentación</button>
+                  <button data-indicator="line" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer;">Línea</button>
+                  <button data-indicator="number" style="flex: 1; padding: 4px 4px; font-size: 11px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Número</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-      </div>
-      
-      <!-- Format Options (above footer) -->
-      <div id="format-options-container" style="padding: 8px 20px; border-top: 1px solid #e0e0e0; background: #f9f9f9; flex-shrink: 0;">
-        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 13px; color: #666;">Formato:</span>
-            <div id="format-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-              <button data-format="md" class="format-btn" style="padding: 6px 14px; font-size: 13px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer;">Markdown</button>
-              <button data-format="epub" class="format-btn" style="padding: 6px 14px; font-size: 13px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer;">EPUB</button>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Markdown Options Panel (visible by default) -->
-        <div id="md-options-panel" style="display: block; margin-top: 8px; padding: 8px 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
-          <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-            <div>
-              <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Estructura:</span>
-              <div id="md-structure-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-                <button data-structure="hierarchical" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Jerárquico (Viñetas)</button>
-                <button data-structure="flat" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Plano (Párrafos)</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- EPUB Options Panel (hidden by default) -->
-        <div id="epub-options-panel" style="display: none; margin-top: 8px; padding: 8px 12px; background: white; border: 1px solid #e0e0e0; border-radius: 4px;">
-          <div style="display: flex; flex-wrap: wrap; gap: 20px;">
-            <div>
-              <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Estructura:</span>
-              <div id="epub-structure-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-                <button data-structure="hierarchical" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Jerárquico (Viñetas)</button>
-                <button data-structure="flat" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Plano (Párrafos)</button>
-              </div>
-            </div>
-            <div>
-              <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Espaciado bloques:</span>
-              <div id="block-spacing-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-                <button data-spacing="compact" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; background: white; color: #666; cursor: pointer; border-radius: 4px 0 0 4px;">Compacto</button>
-                <button data-spacing="normal" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; border-left: none; background: #137CBD; color: white; cursor: pointer;">Normal</button>
-                <button data-spacing="wide" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Amplio</button>
-              </div>
-            </div>
-            <div>
-              <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Al cambiar nivel:</span>
-              <div id="level-spacing-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-                <button data-spacing="none" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; background: white; color: #666; cursor: pointer; border-radius: 4px 0 0 4px;">Ninguno</button>
-                <button data-spacing="subtle" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; border-left: none; background: #137CBD; color: white; cursor: pointer;">Sutil</button>
-                <button data-spacing="marked" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Marcado</button>
-              </div>
-            </div>
-            <div>
-              <span style="font-size: 12px; color: #666; display: block; margin-bottom: 6px;">Indicador niveles:</span>
-              <div id="level-indicator-selector" style="display: flex; border-radius: 4px; overflow: hidden;">
-                <button data-indicator="indent" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Indentación</button>
-                <button data-indicator="line" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer;">Línea</button>
-                <button data-indicator="number" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Numeración</button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
       
       <!-- Footer -->
@@ -1950,7 +1947,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         updateBranchCount();
       } else if (tab === 'pages') {
         tabPages.style.cssText = tabStyle(true);
-        contentPages.style.display = 'block';
+        contentPages.style.display = 'flex';
         pageNameDisplay.style.display = 'none';
         if (window._updatePageCount) window._updatePageCount();
       }

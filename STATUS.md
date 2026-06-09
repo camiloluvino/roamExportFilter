@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-06 13:25
+> **Última actualización**: 2026-06-08 21:47
 
 ---
 
 ## Versión actual
 
-**2.29.0** (2026-06-06 13:25)
+**2.30.0** (2026-06-08 21:47)
 
 ---
 
@@ -39,6 +39,14 @@
 ---
 
 ## Historial reciente
+
+### v2.30.0 (2026-06-08 21:47)
+- Added: **Rediseño global persistente en dos columnas y flexibilidad vertical completa**.
+  - La columna derecha de opciones de exportación es ahora global y visible en todas las pestañas ("Por Ramas" y "Por Páginas").
+  - Se movió el panel de opciones de formato (Markdown/EPUB y sus sub-ajustes específicos) desde la barra inferior hacia la columna lateral derecha.
+  - Se eliminó la barra de formatos inferior, liberando un gran espacio vertical.
+  - Se rediseñó el flujo interno de los paneles de formato (Markdown y EPUB) a una disposición vertical amigable e inteligente en la columna lateral de 280px con botones flexibles (`flex: 1`).
+  - Se optimizó el espacio vertical de los contenedores de árbol (`#branch-tree-container`) y lista de páginas (`#pages-list-container`) usando `flex: 1` y permitiendo un crecimiento dinámico real para ocupar todo el modal.
 
 ### v2.29.0 (2026-06-06 13:25)
 - Added: **Rediseño de interfaz de exportación (Smart Export Modal)**.
