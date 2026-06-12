@@ -1758,6 +1758,16 @@ const promptUnifiedExport = (pageName, pageUid) => {
             <input type="checkbox" id="order-descending" disabled>
             <span>Orden descendente (..., 02_, 01_)</span>
           </label>
+
+          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+            <input type="checkbox" id="shallow-export-enabled">
+            <span>Solo texto visible (sin hijos)</span>
+          </label>
+          <div id="shallow-export-hint" style="display: none; font-size: 11px; color: #888; padding-left: 24px; margin-top: -4px;">
+            Extrae solo el texto raíz del nodo, sin anidamientos.
+          </div>
           
           <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
 
@@ -1868,6 +1878,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
             style="padding: 10px 20px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">
             Cancelar
           </button>
+          <button id="unified-copy" 
+            style="padding: 10px 20px; font-size: 14px; border: 1px solid #137CBD; border-radius: 4px; background: white; color: #137CBD; cursor: pointer;">
+            Copiar al Portapapeles
+          </button>
           <button id="unified-export" 
             style="padding: 10px 20px; font-size: 14px; border: none; border-radius: 4px; background: #137CBD; color: white; cursor: pointer;">
             Exportar
@@ -1891,7 +1905,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const orderDescendingLabel = document.getElementById('order-descending-label');
     const selectionInfo = document.getElementById('selection-info');
     const cancelBtn = document.getElementById('unified-cancel');
+    const copyBtn = document.getElementById('unified-copy');
     const exportBtn = document.getElementById('unified-export');
+    const shallowExportEnabled = document.getElementById('shallow-export-enabled');
+    const shallowExportHint = document.getElementById('shallow-export-hint');
     const treeContainer = document.getElementById('branch-tree-container');
     const mergeExportEnabled = document.getElementById('merge-export-enabled');
     const mergeExportLabel = document.getElementById('merge-export-label');
@@ -2789,7 +2806,12 @@ const promptUnifiedExport = (pageName, pageUid) => {
       resolve({ cancelled: true });
     });
 
-    exportBtn.addEventListener('click', () => {
+    // Hint toggle for shallow export
+    shallowExportEnabled.addEventListener('change', () => {
+      shallowExportHint.style.display = shallowExportEnabled.checked ? 'block' : 'none';
+    });
+
+    const triggerAction = (action) => {
       if (activeTab === 'filters') {
         const tagValue = tagInput.value.trim();
         if (!tagValue) {
@@ -2803,13 +2825,14 @@ const promptUnifiedExport = (pageName, pageUid) => {
           mode: 'filters',
           tagName: cleanTagInput(tagValue),
           format: selectedFormat,
+          action: action,
           epubOptions: { ...epubOptions },
           mdOptions: { ...mdOptions }
         });
       } else if (activeTab === 'branches') {
         const selectedUids = getSelectedBranchUids();
         if (selectedUids.length === 0) {
-          alert('Por favor selecciona al menos una rama para exportar.');
+          alert('Por favor selecciona al menos una rama para procesar.');
           return;
         }
 
@@ -2831,6 +2854,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
           mergeIntoSingle: mergeExportEnabled.checked,
           mergeFilename: mergeFilenameInput.value.trim() || generatePageFilename(pageName) + '_export',
           format: selectedFormat,
+          action: action,
+          shallowExport: shallowExportEnabled.checked,
           epubOptions: { ...epubOptions },
           mdOptions: { ...mdOptions }
         });
@@ -2844,7 +2869,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         }));
 
         if (selectedPages.length === 0) {
-          alert('Por favor selecciona al menos una página para exportar.');
+          alert('Por favor selecciona al menos una página para procesar.');
           return;
         }
 
@@ -2867,11 +2892,16 @@ const promptUnifiedExport = (pageName, pageUid) => {
           selectedPages,
           filterTag: validatedFilterTag,
           format: selectedFormat,
+          action: action,
+          shallowExport: shallowExportEnabled.checked,
           epubOptions: { ...epubOptions },
           mdOptions: { ...mdOptions }
         });
       }
-    });
+    };
+
+    exportBtn.addEventListener('click', () => triggerAction('export'));
+    copyBtn.addEventListener('click', () => triggerAction('copy'));
 
     // Close on overlay click
     overlay.addEventListener('click', (e) => {
@@ -2921,7 +2951,7 @@ const unifiedExport = async () => {
 
     if (result.mode === 'branches') {
       // Export by branch selection
-      const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, epubOptions, mdOptions, branchNamingStrategy = 'block', mergeIntoSingle, mergeFilename } = result;
+      const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, action, shallowExport, epubOptions, mdOptions, branchNamingStrategy = 'block', mergeIntoSingle, mergeFilename } = result;
 
       showNotification(`📄 Procesando ${selectedUids.length} ramas...`, '#137CBD');
 
@@ -2932,8 +2962,25 @@ const unifiedExport = async () => {
 
       for (const uid of selectedUids) {
         try {
-          // Get the branch with all its descendants (NO ancestors)
-          let branchTree = getBlockWithDescendants(uid);
+          let branchTree;
+          
+          if (shallowExport) {
+            // SHALLOW EXPORT: Get only the root block text, no children
+            const blockData = window.roamAlphaAPI.pull(
+              '[:block/uid :block/string :block/heading]',
+              [':block/uid', uid]
+            );
+            if (!blockData) continue;
+            branchTree = {
+              uid: blockData[':block/uid'],
+              content: blockData[':block/string'] || '',
+              heading: blockData[':block/heading'] || 0,
+              children: [] // No children
+            };
+          } else {
+            // Get the branch with all its descendants (NO ancestors)
+            branchTree = getBlockWithDescendants(uid);
+          }
 
           if (!branchTree) continue;
 
@@ -2990,9 +3037,15 @@ const unifiedExport = async () => {
         const allSections = [];
 
         for (const { tree: branchTree } of branchTrees) {
+          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+
+          if (action === 'copy') {
+            allSections.push(markdown);
+            continue;
+          }
+
           const rootContent = branchTree.content || 'untitled';
           const ancestors = getOrderedBlockAncestors(branchTree.uid);
-          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
 
           let ancestorsContext = "";
           if (ancestors.length > 0) {
@@ -3010,12 +3063,24 @@ const unifiedExport = async () => {
           allSections.push(section);
         }
 
-        const globalHeader = `# ${pageName}\n> Generated: ${new Date().toLocaleString()}\n> Ramas exportadas: ${branchTrees.length}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
-        const mergedContent = globalHeader + allSections.join('\n---\n\n');
-        const filename = (mergeFilename || generatePageFilename(pageName) + '_export') + '.md';
-
-        downloadFile(mergedContent, filename);
-        showNotification(`✓ Exportado archivo combinado (${branchTrees.length} ramas)`, '#28a745');
+        if (action === 'copy') {
+           // Copy to clipboard instead of downloading, cleanly
+           const mergedContent = allSections.join('\n');
+           if (navigator.clipboard && navigator.clipboard.writeText) {
+             navigator.clipboard.writeText(mergedContent)
+               .then(() => showNotification(`✓ Copiado al portapapeles (${branchTrees.length} ramas combinadas)`, '#137CBD'))
+               .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
+           } else {
+             showNotification('✗ Portapapeles no disponible', '#DC143C');
+           }
+        } else {
+          // Regular file export
+          const globalHeader = `# ${pageName}\n> Generated: ${new Date().toLocaleString()}\n> Ramas procesadas: ${branchTrees.length}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
+          const mergedContent = globalHeader + allSections.join('\n---\n\n');
+          const filename = (mergeFilename || generatePageFilename(pageName) + '_export') + '.md';
+          downloadFile(mergedContent, filename);
+          showNotification(`✓ Exportado archivo combinado (${branchTrees.length} ramas)`, '#28a745');
+        }
 
       } else {
         // Markdown: One file per branch (existing behavior)
@@ -3051,66 +3116,85 @@ const unifiedExport = async () => {
           const ancestors = getOrderedBlockAncestors(branchTree.uid);
           const markdown = treeToMarkdown([branchTree], 0, mdOptions);
 
-          let ancestorsContext = "";
-          if (ancestors.length > 0) {
-            ancestorsContext = "\n>\n> **Jerarquía original:**\n";
-            let indent = "> ";
-            for (const anc of ancestors) {
-              ancestorsContext += `${indent}- ${anc.content}\n`;
-              indent += "  ";
+          let contentToSave;
+          if (action === 'copy') {
+            contentToSave = markdown;
+          } else {
+            let ancestorsContext = "";
+            if (ancestors.length > 0) {
+              ancestorsContext = "\n>\n> **Jerarquía original:**\n";
+              let indent = "> ";
+              for (const anc of ancestors) {
+                ancestorsContext += `${indent}- ${anc.content}\n`;
+                indent += "  ";
+              }
             }
+            const breadcrumbText = ancestorsContext || branchTree.breadcrumbMd || '';
+            const header = `# ${rootContent}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}${breadcrumbText}\n\n---\n\n`;
+            contentToSave = header + markdown;
           }
-          const breadcrumbText = ancestorsContext || branchTree.breadcrumbMd || '';
-          const header = `# ${rootContent}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}${breadcrumbText}\n\n---\n\n`;
 
           files.push({
             filename,
-            content: header + markdown
+            content: contentToSave
           });
         }
 
-        // Download based on file count
-        if (files.length <= 5) {
-          // Individual downloads
-          for (const file of files) {
-            downloadFile(file.content, file.filename);
+        // Process files (download or copy)
+        if (action === 'copy') {
+          // If copying multiple unmerged branches, concatenate them cleanly
+          const combinedForClipboard = files.map(f => f.content).join('\n');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+             navigator.clipboard.writeText(combinedForClipboard)
+               .then(() => showNotification(`✓ Copiados ${files.length} fragmentos al portapapeles`, '#137CBD'))
+               .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
+          } else {
+             showNotification('✗ Portapapeles no disponible', '#DC143C');
           }
-          showNotification(`✓ Exportados ${files.length} archivos`, '#28a745');
         } else {
-          // ZIP download
-          try {
-            const JSZip = await loadJSZip();
-            const zip = new JSZip();
-
+          // Download based on file count
+          if (files.length <= 5) {
+            // Individual downloads
             for (const file of files) {
-              zip.file(file.filename, file.content);
+              downloadFile(file.content, file.filename);
             }
+            showNotification(`✓ Exportados ${files.length} archivos`, '#28a745');
+          } else {
+            // ZIP download
+            try {
+              const JSZip = await loadJSZip();
+              const zip = new JSZip();
 
-            const date = new Date().toISOString().split('T')[0];
-            const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
-            const zipFilename = `export_${safePageName}_${date}.zip`;
+              for (const file of files) {
+                zip.file(file.filename, file.content);
+              }
 
-            const blob = await zip.generateAsync({ type: 'blob' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = zipFilename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+              const date = new Date().toISOString().split('T')[0];
+              const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
+              const zipFilename = `export_${safePageName}_${date}.zip`;
 
-            showNotification(`✓ Exportado ZIP con ${files.length} archivos`, '#28a745');
-          } catch (err) {
-            console.error('Error creating ZIP:', err);
-            showNotification('❌ Error creando ZIP', '#DC143C');
+              const blob = await zip.generateAsync({ type: 'blob' });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = zipFilename;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+
+              showNotification(`✓ Exportado ZIP con ${files.length} archivos`, '#28a745');
+            } catch (err) {
+              console.error('Error creating ZIP:', err);
+              showNotification('❌ Error creando ZIP', '#DC143C');
+            }
           }
         }
       }
 
     } else if (result.mode === 'pages') {
       // Export by page selection
-      const { selectedPages, filterTag, format, epubOptions, mdOptions } = result;
+      const { selectedPages, filterTag, format, action, shallowExport, epubOptions, mdOptions } = result;
 
       showNotification(`📄 Procesando ${selectedPages.length} página${selectedPages.length !== 1 ? 's' : ''}...`, '#137CBD');
 
@@ -3130,10 +3214,30 @@ const unifiedExport = async () => {
             // Get all content from the page
             const roots = getRootBlocks(page.uid);
             if (!roots || roots.length === 0) continue;
-            tree = roots.map(r => {
-              const uid = r[':block/uid'] || r.uid;
-              return getBlockWithDescendants(uid);
-            }).filter(Boolean);
+            
+            if (shallowExport) {
+              // SHALLOW EXPORT: Only the root level blocks of the page
+              tree = roots.map(r => {
+                const uid = r[':block/uid'] || r.uid;
+                const blockData = window.roamAlphaAPI.pull(
+                  '[:block/uid :block/string :block/heading]',
+                  [':block/uid', uid]
+                );
+                if (!blockData) return null;
+                return {
+                  uid: blockData[':block/uid'],
+                  content: blockData[':block/string'] || '',
+                  heading: blockData[':block/heading'] || 0,
+                  children: [] // No children
+                };
+              }).filter(Boolean);
+            } else {
+              // Full descendant tree
+              tree = roots.map(r => {
+                const uid = r[':block/uid'] || r.uid;
+                return getBlockWithDescendants(uid);
+              }).filter(Boolean);
+            }
           }
 
           if (!tree || tree.length === 0) continue;
@@ -3143,8 +3247,14 @@ const unifiedExport = async () => {
             files.push({ filename: `${safeName}.epub`, blob, isBlob: true });
           } else {
             const markdown = treeToMarkdown(tree, 0, mdOptions);
-            const header = `# ${page.shortName}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
-            files.push({ filename: `${safeName}.md`, content: header + markdown, isBlob: false });
+            let contentToSave;
+            if (action === 'copy') {
+              contentToSave = markdown;
+            } else {
+              const header = `# ${page.shortName}\n> Generated: ${new Date().toLocaleString()}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
+              contentToSave = header + markdown;
+            }
+            files.push({ filename: `${safeName}.md`, content: contentToSave, isBlob: false });
           }
         } catch (err) {
           console.error(`Error processing page ${page.title}:`, err);
@@ -3157,38 +3267,54 @@ const unifiedExport = async () => {
         return;
       }
 
-      // Download based on file count
-      if (files.length <= 5) {
-        // Individual downloads
-        for (const f of files) {
-          if (f.isBlob) {
-            downloadBlob(f.blob, f.filename);
-          } else {
-            downloadFile(f.content, f.filename);
-          }
+      // Process files based on action
+      if (action === 'copy') {
+        if (format === 'epub') {
+           showNotification('❌ No se puede copiar EPUB al portapapeles', '#DC143C');
+        } else {
+           const combinedForClipboard = files.map(f => f.content).join('\n\n');
+           if (navigator.clipboard && navigator.clipboard.writeText) {
+             navigator.clipboard.writeText(combinedForClipboard)
+               .then(() => showNotification(`✓ Copiado contenido de ${files.length} páginas al portapapeles`, '#137CBD'))
+               .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
+           } else {
+             showNotification('✗ Portapapeles no disponible', '#DC143C');
+           }
         }
-        showNotification(`✓ Exportado${files.length !== 1 ? 's' : ''} ${files.length} archivo${files.length !== 1 ? 's' : ''}`, '#28a745');
       } else {
-        // ZIP download
-        try {
-          const JSZip = await loadJSZip();
-          const zip = new JSZip();
-
+        // Download based on file count
+        if (files.length <= 5) {
+          // Individual downloads
           for (const f of files) {
-            zip.file(f.filename, f.isBlob ? f.blob : f.content);
+            if (f.isBlob) {
+              downloadBlob(f.blob, f.filename);
+            } else {
+              downloadFile(f.content, f.filename);
+            }
           }
+          showNotification(`✓ Exportado${files.length !== 1 ? 's' : ''} ${files.length} archivo${files.length !== 1 ? 's' : ''}`, '#28a745');
+        } else {
+          // ZIP download
+          try {
+            const JSZip = await loadJSZip();
+            const zip = new JSZip();
 
-          const date = new Date().toISOString().split('T')[0];
-          const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
-          const zipFilename = `export_${safePageName}_${date}.zip`;
+            for (const f of files) {
+              zip.file(f.filename, f.isBlob ? f.blob : f.content);
+            }
 
-          const blob = await zip.generateAsync({ type: 'blob' });
-          downloadBlob(blob, zipFilename);
+            const date = new Date().toISOString().split('T')[0];
+            const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
+            const zipFilename = `export_${safePageName}_${date}.zip`;
 
-          showNotification(`✓ Exportado ZIP con ${files.length} archivos`, '#28a745');
-        } catch (err) {
-          console.error('Error creating ZIP:', err);
-          showNotification('❌ Error creando ZIP', '#DC143C');
+            const blob = await zip.generateAsync({ type: 'blob' });
+            downloadBlob(blob, zipFilename);
+
+            showNotification(`✓ Exportado ZIP con ${files.length} archivos`, '#28a745');
+          } catch (err) {
+            console.error('Error creating ZIP:', err);
+            showNotification('❌ Error creando ZIP', '#DC143C');
+          }
         }
       }
     }
@@ -4396,119 +4522,19 @@ const visualTreeToHTML = (nodes) => {
 };
 
 // Main copy function for visual selection (Alt+Shift+C)
-const copyVisibleBlocks = (event) => {
-  event.preventDefault();
-  event.stopPropagation();
-
-  descendantsCache = new Map();
-  blockInfoCache = new Map();
-
-  try {
-    const selectedContainers = Array.from(document.querySelectorAll('.block-highlight-blue'));
-
-    if (selectedContainers.length === 0) {
-      return;
-    }
-
-    const selectedUids = new Set();
-    selectedContainers.forEach(container => {
-      const uid = getBlockUidFromElement(container);
-      if (uid) selectedUids.add(uid);
-    });
-
-    const topLevelContainers = selectedContainers.filter(container => {
-      return !selectedContainers.some(otherContainer =>
-        otherContainer !== container && isDescendantOf(container, otherContainer)
-      );
-    });
-
-    let allNodes = [];
-
-    topLevelContainers.forEach(container => {
-      const blockUid = getBlockUidFromElement(container);
-      if (!blockUid) return;
-
-      const selectedDescendantUids = findSelectedDescendants(blockUid, selectedUids);
-
-      if (selectedDescendantUids.length > 0) {
-        const leafTargets = selectedDescendantUids.filter(uid => {
-          const descendants = getAllDescendantUids(uid);
-          return !descendants.some(desc => selectedUids.has(desc));
-        });
-        const targetUidsSet = new Set(leafTargets);
-        const node = buildVisualPathTree(blockUid, targetUidsSet);
-        if (node) allNodes.push(node);
-      } else {
-        const node = getVisualBlockTree(blockUid);
-        if (node) allNodes.push(node);
-      }
-    });
-
-    const markdownLines = visualTreeToMarkdown(allNodes);
-    const textContent = markdownLines.join('\n');
-    const htmlContent = visualTreeToHTML(allNodes);
-
-    if (textContent) {
-      if (!navigator.clipboard || typeof navigator.clipboard.write !== 'function') {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(textContent)
-            .then(() => showNotification('✓ Copied (Text only)', '#137CBD'))
-            .catch(() => showNotification('✗ Copy failed', '#DC143C'));
-          return;
-        }
-        showNotification('✗ Clipboard not available', '#DC143C');
-        return;
-      }
-
-      const textBlob = new Blob([textContent], { type: 'text/plain' });
-      const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
-      const clipboardItem = new ClipboardItem({ 'text/plain': textBlob, 'text/html': htmlBlob });
-
-      navigator.clipboard.write([clipboardItem])
-        .then(() => showNotification('✓ Copied (Text + HTML)', '#137CBD'))
-        .catch(() => {
-          navigator.clipboard.writeText(textContent)
-            .then(() => showNotification('✓ Copied (Text only)', '#137CBD'));
-        });
-    }
-  } finally {
-    descendantsCache = null;
-    blockInfoCache = null;
-  }
-};
-
-// Keyboard shortcut handler
-const handleKeyDown = (event) => {
-  if (event.altKey && event.shiftKey && event.key === 'C') {
-    copyVisibleBlocks(event);
-  }
-};
+// (Smart Copy functionality removed via user request)
 
 // ============================================
 // EXTENSION INITIALIZATION
 // ============================================
 
 const initExtension = () => {
-  // Add keyboard shortcut for visual selection copy
-  document.removeEventListener('keydown', handleKeyDown);
-  document.addEventListener('keydown', handleKeyDown);
-
   // Register commands in Command Palette
   if (window.roamAlphaAPI?.ui?.commandPalette) {
     // Main unified export command (with tabs)
     window.roamAlphaAPI.ui.commandPalette.addCommand({
       label: "Smart Export",
       callback: unifiedExport,
-      "disable-hotkey": false
-    });
-
-    // Visual selection copy (keep separate - different functionality)
-    window.roamAlphaAPI.ui.commandPalette.addCommand({
-      label: "Smart Copy Selected Blocks",
-      callback: () => {
-        const fakeEvent = { preventDefault: () => { }, stopPropagation: () => { } };
-        copyVisibleBlocks(fakeEvent);
-      },
       "disable-hotkey": false
     });
 
@@ -4524,11 +4550,8 @@ const initExtension = () => {
 };
 
 const cleanupExtension = () => {
-  document.removeEventListener('keydown', handleKeyDown);
-
   if (window.roamAlphaAPI?.ui?.commandPalette) {
     window.roamAlphaAPI.ui.commandPalette.removeCommand({ label: "Smart Export" });
-    window.roamAlphaAPI.ui.commandPalette.removeCommand({ label: "Smart Copy Selected Blocks" });
     window.roamAlphaAPI.ui.commandPalette.removeCommand({ label: "Export by Root Blocks" });
   }
 

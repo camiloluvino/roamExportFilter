@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-12 16:10
+> **Última actualización**: 2026-06-12 18:05
 
 ---
 
 ## Versión actual
 
-**2.30.1** (2026-06-12 16:10)
+**2.31.0** (2026-06-12 18:05)
 
 ---
 
@@ -17,7 +17,8 @@
 | **Smart Export** | ✅ Estable | Modal unificado con 2 pestañas (Por Ramas, Por Páginas) con buscador interactivo y administrador persistente de tags favoritos |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
-| **Smart Copy (Alt+Shift+C)** | ✅ Estable | Copia bloques visualmente seleccionados |
+| **Shallow Export** | ✅ Nuevo | Opción "Solo texto visible" para omitir sub-bloques anidados |
+| **Clean Copy** | ✅ Nuevo | Botón "Copiar al portapapeles" que exporta markdown en texto plano sin metadatos |
 | **Export by Root Blocks** | ✅ Estable | Exporta cada bloque raíz como archivo separado |
 | **ZIP Export (>5 files)** | ✅ Estable | Bundling automático con JSZip |
 | **Custom Naming** | ✅ Estable | Opciones de nomenclatura y prevención de duplicados |
@@ -39,6 +40,17 @@
 ---
 
 ## Historial reciente
+
+### v2.31.0 (2026-06-12 18:05)
+- Added: **Exportación "Solo texto visible" (Shallow Export)**.
+  - Nueva opción en el panel lateral del modal que permite extraer únicamente el texto de los bloques de nivel raíz seleccionados, ignorando todo su contenido anidado (hijos/nietos).
+  - Compatible tanto con el modo "Por Ramas" como con "Por Páginas".
+- Added: **Copiar al Portapapeles Limpio**.
+  - Nuevo botón "Copiar al Portapapeles" junto a "Exportar" en el modal principal.
+  - Genera y copia directamente el Markdown limpio sin descargar archivos físicos.
+  - Formato puro: omite los metadatos de encabezado global, las marcas de tiempo (`> Generated`) y los separadores de archivo, entregando solo el texto seleccionado.
+- Removed: **Eliminación del antiguo Smart Copy**.
+  - Se eliminó la función obsoleta de "Smart Copy" (atajo `Alt+Shift+C`) en favor del nuevo botón de copia limpio integrado directamente en el modal unificado.
 
 ### v2.30.1 (2026-06-12 16:10)
 - Fixed: **Corrección de desconfiguración visual (overlapping) en panel de Opciones de Exportación**.
