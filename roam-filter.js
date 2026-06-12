@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.30.0
-// Date: 2026-06-08 21:47
+// Version: 2.30.1
+// Date: 2026-06-12 16:10
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1550,7 +1550,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       </div>
       
       <!-- Tab content container -->
-      <div style="padding: 20px; flex: 1; min-height: 0; display: flex; gap: 32px; overflow: hidden;">
+      <div style="padding: 20px; flex: 1; min-height: 0; height: 0; display: flex; gap: 32px; overflow: hidden;">
         
         <!-- Left column: holds active tab content -->
         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%;">
@@ -1722,7 +1722,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         </div>
 
         <!-- Right column: Export options & Format settings (Global & Persistent) -->
-        <div style="width: 280px; flex-shrink: 0; overflow-y: auto; max-height: 100%; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 12px;">
+        <div style="width: 280px; flex-shrink: 0; overflow-y: auto; min-height: 0; box-sizing: border-box; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 12px;">
           <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px;">⚙ Opciones de exportación</div>
           <div>
             <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
@@ -1768,7 +1768,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
               display: flex;
               flex-wrap: wrap;
               gap: 6px;
-              max-height: 130px;
+              max-height: 100px;
               overflow-y: auto;
               padding: 8px;
               border: 1px solid #ddd;

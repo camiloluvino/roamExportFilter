@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-08 21:47
+> **Última actualización**: 2026-06-12 16:10
 
 ---
 
 ## Versión actual
 
-**2.30.0** (2026-06-08 21:47)
+**2.30.1** (2026-06-12 16:10)
 
 ---
 
@@ -39,6 +39,12 @@
 ---
 
 ## Historial reciente
+
+### v2.30.1 (2026-06-12 16:10)
+- Fixed: **Corrección de desconfiguración visual (overlapping) en panel de Opciones de Exportación**.
+  - Agregado `min-height: 0` y `box-sizing: border-box` en el panel derecho para permitir el scroll vertical de flexbox y evitar desbordamientos.
+  - Agregado `height: 0` al contenedor padre del modal para una resolución correcta de altura dinámica.
+  - Reducido el alto máximo (`max-height`) de los Tags Favoritos a `100px` para liberar espacio vertical a los selectores de Formato/Estructura.
 
 ### v2.30.0 (2026-06-08 21:47)
 - Added: **Rediseño global persistente en dos columnas y flexibilidad vertical completa**.

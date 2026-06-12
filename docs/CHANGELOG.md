@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.30.1] - 2026-06-12 16:10
+
+### Fixed
+- **Corrección de desconfiguración visual (overlapping) en panel de Opciones de Exportación**:
+  - Agregado `min-height: 0` y `box-sizing: border-box` en el panel derecho para permitir el scroll vertical de flexbox y evitar desbordamientos.
+  - Agregado `height: 0` al contenedor padre del modal para una resolución correcta de altura dinámica.
+  - Reducido el alto máximo (`max-height`) de los Tags Favoritos a `100px` para liberar espacio vertical a los selectores de Formato/Estructura.
+
+---
+
+## [2.30.0] - 2026-06-08 21:47
+
+### Added
+- **Rediseño global persistente en dos columnas y flexibilidad vertical completa**:
+  - La columna derecha de opciones de exportación es ahora global y visible en todas las pestañas ("Por Ramas" y "Por Páginas").
+  - Se movió el panel de opciones de formato (Markdown/EPUB y sus sub-ajustes específicos) desde la barra inferior hacia la columna lateral derecha.
+  - Se eliminó la barra de formatos inferior, liberando un gran espacio vertical.
+  - Se rediseñó el flujo interno de los paneles de formato (Markdown y EPUB) a una disposición vertical amigable e inteligente en la columna lateral de 280px con botones flexibles (`flex: 1`).
+  - Se optimizó el espacio vertical de los contenedores de árbol (`#branch-tree-container`) y lista de páginas (`#pages-list-container`) usando `flex: 1` y permitiendo un crecimiento dinámico real para ocupar todo el modal.
+
+---
+
 ## [2.29.0] - 2026-06-06 13:25
 
 ### Added
