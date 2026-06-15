@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-15 16:45
+> **Última actualización**: 2026-06-15 17:30
 
 ---
 
 ## Versión actual
 
-**2.31.1** (2026-06-15 16:45)
+**2.32.0** (2026-06-15 17:30)
 
 ---
 
@@ -40,6 +40,14 @@
 ---
 
 ## Historial reciente
+
+### v2.32.0 (2026-06-15 17:30)
+- Added: **Nomenclatura Jerárquica Estricta**.
+  - Nuevos formateadores dinámicos que fuerzan la nomenclatura `{NombrePagina}_{Fecha}_{Bloque}` usando estrictamente PascalCase/camelCase y guiones bajos (`_`), eliminando espacios, guiones medios (`-`) y caracteres especiales.
+  - Extracción automática de la fecha real del bloque (ej. `[[June 15th, 2026]]` → `20260615`) o de la página con fallbacks inteligentes.
+  - Generación de nombres legibles en camelCase para bloques sin título basándose en las primeras 5 palabras (ej: `ayerEstuvimosRevisandoElFiltro`).
+  - Preservación inteligente de acrónimos en mayúsculas (ej: `AIResearch`).
+  - Aplicado a exportaciones por ramas, bloques raíz, ZIPs y EPUB.
 
 ### v2.31.1 (2026-06-15 16:45)
 - Fixed: **Corrección visual y de scrollbar en la columna de Opciones de Exportación**.

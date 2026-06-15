@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.32.0] - 2026-06-15 17:30
+
+### Added
+- **Nomenclatura Jerárquica Estricta**:
+  - Implementación del formato `{NombrePagina}_{Fecha}_{Bloque}` usando estrictamente PascalCase/camelCase y guiones bajos (`_`).
+  - Eliminación completa de guiones medios (`-`), espacios y caracteres especiales de todos los nombres de archivo generados.
+  - Extracción inteligente de la fecha nativa de Roam (ej: `[[June 14th, 2026]]` → `20260614`) tanto de los bloques como del título de la página, con fallback a la fecha de hoy.
+  - Los bloques sin título (texto plano) ahora generan nombres legibles abreviando las primeras 5 palabras en camelCase (ej: `ayerEstuvimosRevisandoElFiltro`).
+  - Preservación inteligente de siglas/acrónimos completamente en mayúsculas (ej: `AIResearch`).
+  - Aplicado a exportaciones por ramas, exportaciones de bloques raíz, descargas ZIP de lotes y exportaciones EPUB.
+
+---
+
 ## [2.30.1] - 2026-06-12 16:10
 
 ### Fixed

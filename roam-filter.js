@@ -509,46 +509,108 @@ const rootBlockToMarkdown = (rootContent, childrenTree) => {
 };
 
 // Generate safe filename from block content
-const generateRootFilename = (blockContent) => {
-  if (!blockContent) return "untitled.md";
-
-  // Remove [[]] references but keep the text inside
-  let safe = blockContent.replace(/\[\[([^\]]+)\]\]/g, '$1');
-
-  // Remove # tags
-  safe = safe.replace(/#/g, '');
-
-  // Replace problematic characters
-  safe = safe.replace(/[\/\\:*?"<>|]/g, '_');
-
-  // Replace multiple spaces/underscores with single underscore
-  safe = safe.replace(/[\s_]+/g, '_');
-
-  // Trim and limit length
-  safe = safe.trim().substring(0, 50);
-
-  // Remove trailing underscores
-  safe = safe.replace(/_+$/, '');
-
-  return `${safe || 'untitled'}.md`;
+// Auxiliary helper to parse Roam dates like "June 14th, 2026" or "June 14, 2026"
+const parseRoamDate = (dateStr) => {
+  if (!dateStr) return null;
+  const match = dateStr.match(/(January|February|March|April|May|June|July|August|September|October|November|December)\s(\d{1,2})(?:st|nd|rd|th)?,\s(\d{4})/);
+  if (!match) return null;
+  const monthNames = {
+    January: 0, February: 1, March: 2, April: 3, May: 4, June: 5,
+    July: 6, August: 7, September: 8, October: 9, November: 10, December: 11
+  };
+  const month = monthNames[match[1]];
+  const day = parseInt(match[2], 10);
+  const year = parseInt(match[3], 10);
+  return new Date(year, month, day);
 };
 
-// Generate camelCase filename from page title with namespace
-// "entrevista/real/María Paz" → "entrevistaReal_mariaPaz"
+// Generate date string in YYYYMMDD format without dashes/internal underscores
+const generateDateString = (dateObj = new Date()) => {
+  const yyyy = dateObj.getFullYear();
+  const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const dd = String(dateObj.getDate()).padStart(2, '0');
+  return `${yyyy}${mm}${dd}`;
+};
+
+// Extract date from block content first, then page title, otherwise use today's date
+const extractDate = (blockContent, pageName) => {
+  if (blockContent) {
+    const blockDate = parseRoamDate(blockContent);
+    if (blockDate) return generateDateString(blockDate);
+  }
+  if (pageName) {
+    const pageDate = parseRoamDate(pageName);
+    if (pageDate) return generateDateString(pageDate);
+  }
+  return generateDateString(new Date());
+};
+
+// Clean text to camelCase/PascalCase, preserving camelCase of acronyms/words if they already have internal uppercase
+const sanitizeToCamelCase = (text, isCamel = false) => {
+  if (!text) return '';
+  // Remove diacritics
+  let clean = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  // Remove double brackets [[]], keep inner text
+  clean = clean.replace(/\[\[([^\]]+)\]\]/g, '$1');
+  // Remove markdown formatting
+  clean = clean.replace(/[*_`#]/g, '');
+  
+  // Split by spaces, dashes, slashes, backslashes
+  const segments = clean.split(/[\s\-\\\/]+/).filter(Boolean);
+  if (segments.length === 0) return '';
+  
+  return segments.map((seg, i) => {
+    // If it's already camelCased (has uppercase letters not at the start), preserve it
+    const hasInternalUppercase = /[a-z][A-Z]/.test(seg);
+    // If it's all uppercase (acronyms like AI, EPUB, etc.), preserve it
+    const isAllUppercase = /^[A-Z\d]+$/.test(seg);
+
+    if (hasInternalUppercase || isAllUppercase) {
+      if (isCamel && i === 0) {
+        return seg.charAt(0).toLowerCase() + seg.slice(1);
+      } else {
+        return seg.charAt(0).toUpperCase() + seg.slice(1);
+      }
+    }
+    
+    // Otherwise, convert standard word to camelCase/PascalCase
+    if (isCamel && i === 0) {
+      return seg.toLowerCase();
+    } else {
+      return seg.charAt(0).toUpperCase() + seg.slice(1).toLowerCase();
+    }
+  }).join('');
+};
+
+// Generate safe filename from block content without extension
+const generateRootFilename = (blockContent) => {
+  if (!blockContent) return "untitled";
+
+  // Step 1: Check if there is bold text at the beginning of the block as the title
+  let title = '';
+  // Match bold block headers, possibly preceded by date link (like [[June 14th, 2026]] **title**)
+  const dateRemovedContent = blockContent.replace(/^\[\[[^\]]+\]\]\s*/, '');
+  const boldMatch = dateRemovedContent.match(/^\s*\*\*([^*]+)\*\*/);
+  if (boldMatch) {
+    title = boldMatch[1];
+  } else {
+    // Fallback: take first 5 words of clean block content (removing date link first if present)
+    const cleanContent = dateRemovedContent.replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/[*_`#]/g, '');
+    const words = cleanContent.split(/\s+/).filter(Boolean);
+    title = words.slice(0, 5).join(' ');
+  }
+
+  const safe = sanitizeToCamelCase(title, true);
+  return safe || 'untitled';
+};
+
+// Generate PascalCase/camelCase filename from page title with namespace
+// "entrevista/real/María Paz" → "Entrevista_Real_MariaPaz"
 const generatePageFilename = (fullTitle) => {
   if (!fullTitle) return 'untitled';
-  return fullTitle.split('/').map((segment, i) => {
-    const clean = segment.trim()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove diacritics
-      .replace(/[^a-zA-Z0-9\s]/g, '')                  // only alphanumeric + spaces
-      .trim();
-    if (!clean) return 'untitled';
-    const words = clean.split(/\s+/);
-    // camelCase: first word of first segment all lowercase, rest capitalized
-    return words.map((w, j) =>
-      (i === 0 && j === 0) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
-    ).join('');
-  }).join('_');
+  return fullTitle.split('/').map((segment) => {
+    return sanitizeToCamelCase(segment, false); // PascalCase each segment
+  }).filter(Boolean).join('_') || 'untitled';
 };
 
 // --- tree-builder.js ---
@@ -1334,7 +1396,7 @@ const generateEpubBlob = async (tree, title, options = {}) => {
 const downloadAsEpub = async (tree, title, options = {}) => {
   try {
     const blob = await generateEpubBlob(tree, title, options);
-    const safeTitle = title.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 50);
+    const safeTitle = title.split(' - ').map(part => sanitizeToCamelCase(part, false)).join('_');
     const filename = `${safeTitle || 'export'}.epub`;
     return downloadBlob(blob, filename);
   } catch (err) {
@@ -3091,17 +3153,17 @@ const unifiedExport = async () => {
           const prefixNumber = useDescendingOrder ? (totalForPrefix - idx) : (idx + 1);
           const prefix = useOrderPrefix ? String(prefixNumber).padStart(2, '0') + '_' : '';
 
-          let baseName = '';
           const safePage = generatePageFilename(pageName);
           const blockName = generateRootFilename(rootContent);
-          const blockNameWithoutExt = blockName.substring(0, blockName.length - 3); // Remove .md
+          const dateStr = extractDate(rootContent, pageName);
 
+          let baseName = '';
           if (branchNamingStrategy === 'block') {
-            baseName = blockNameWithoutExt;
+            baseName = `${dateStr}_${blockName}`;
           } else if (branchNamingStrategy === 'page_block') {
-            baseName = safePage + '_' + blockNameWithoutExt;
+            baseName = `${safePage}_${dateStr}_${blockName}`;
           } else if (branchNamingStrategy === 'page') {
-            baseName = safePage;
+            baseName = `${safePage}_${dateStr}`;
           }
 
           let filename = prefix + baseName + '.md';
@@ -3169,9 +3231,9 @@ const unifiedExport = async () => {
                 zip.file(file.filename, file.content);
               }
 
-              const date = new Date().toISOString().split('T')[0];
-              const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
-              const zipFilename = `export_${safePageName}_${date}.zip`;
+              const dateStr = generateDateString(new Date());
+              const safePageName = generatePageFilename(pageName);
+              const zipFilename = `export_${safePageName}_${dateStr}.zip`;
 
               const blob = await zip.generateAsync({ type: 'blob' });
               const url = URL.createObjectURL(blob);
@@ -3303,9 +3365,9 @@ const unifiedExport = async () => {
               zip.file(f.filename, f.isBlob ? f.blob : f.content);
             }
 
-            const date = new Date().toISOString().split('T')[0];
-            const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
-            const zipFilename = `export_${safePageName}_${date}.zip`;
+            const dateStr = generateDateString(new Date());
+            const safePageName = generatePageFilename(pageName);
+            const zipFilename = `export_${safePageName}_${dateStr}.zip`;
 
             const blob = await zip.generateAsync({ type: 'blob' });
             downloadBlob(blob, zipFilename);
@@ -3779,10 +3841,12 @@ const exportByRootBlocks = async () => {
       // Generate markdown and filename with order prefix
       const markdown = rootBlockToMarkdown(rootContent, children);
       const baseFilename = generateRootFilename(rootContent);
+      const safePageName = generatePageFilename(pageName);
+      const dateStr = extractDate(rootContent, pageName);
       // Pad order number - invertOrder: bottom block = 01, otherwise top block = 01
       const orderNum = invertOrder ? (rootBlocks.length - orderIndex + 1) : orderIndex;
       const orderPrefix = String(orderNum).padStart(2, '0');
-      const filename = `${orderPrefix}_${baseFilename}`;
+      const filename = `${orderPrefix}_${safePageName}_${dateStr}_${baseFilename}.md`;
       orderIndex++;
 
       filesToExport.push({ filename, content: markdown });
@@ -3811,9 +3875,9 @@ const exportByRootBlocks = async () => {
         const zipBlob = await zip.generateAsync({ type: 'blob' });
 
         // Generate ZIP filename
-        const date = new Date().toISOString().split('T')[0];
-        const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
-        const zipFilename = `export_${safePageName}_${date}.zip`;
+        const dateStr = generateDateString(new Date());
+        const safePageName = generatePageFilename(pageName);
+        const zipFilename = `export_${safePageName}_${dateStr}.zip`;
 
         // Download ZIP
         const url = URL.createObjectURL(zipBlob);
@@ -4259,10 +4323,10 @@ const exportByBranchSelection = async () => {
     const markdown = treeToMarkdown(exportTree);
 
     // Step 6: Generate filename and download
-    const date = new Date().toISOString().split('T')[0];
-    const safePageName = pageName.replace(/[\/\\:*?"<>|]/g, '_').substring(0, 30);
-    const filterSuffix = filterTag ? `_${filterTag.replace(/[\/\\:*?"<>|]/g, '_')}` : '';
-    const filename = `branches_${safePageName}${filterSuffix}_${date}.md`;
+    const dateStr = generateDateString(new Date());
+    const safePageName = generatePageFilename(pageName);
+    const filterSuffix = filterTag ? `_${sanitizeToCamelCase(filterTag, true)}` : '';
+    const filename = `branches_${safePageName}${filterSuffix}_${dateStr}.md`;
 
     const header = `# Export: ${pageName}\n> Generated: ${new Date().toLocaleString()}\n> Branches: ${selectedUids.length}${filterTag ? `\n> Filter: #${filterTag}` : ''}\n\n---\n\n`;
 
