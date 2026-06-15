@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.32.1] - 2026-06-15 19:00
+
+### Fixed
+- **Scrollbar del panel de árbol de ramas y páginas**:
+  - Se solucionó el error que impedía hacer scroll hacia abajo en el panel central del modal ("Por Ramas" / "Por Páginas") en pantallas medianas/pequeñas o ante listas muy extensas de bloques.
+  - Reemplazados los atributos de alto fijos (`height: 0` y `height: 100%`) por `min-height: 0` e implementado `box-sizing: border-box` en el contenedor principal de las pestañas para permitir el encogimiento adaptativo del layout de flexbox, activando correctamente el scroll nativo (`overflow-y: auto`).
+
+---
+
 ## [2.32.0] - 2026-06-15 17:30
 
 ### Added

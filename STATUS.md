@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-15 17:30
+> **Última actualización**: 2026-06-15 19:00
 
 ---
 
 ## Versión actual
 
-**2.32.0** (2026-06-15 17:30)
+**2.32.1** (2026-06-15 19:00)
 
 ---
 
@@ -40,6 +40,11 @@
 ---
 
 ## Historial reciente
+
+### v2.32.1 (2026-06-15 19:00)
+- Fixed: **Falta de scroll en el panel principal (ramas/páginas)**.
+  - Corregida la estructura Flexbox en la ventana modal eliminando restricciones de altura rígidas (`height: 0` y `height: 100%`) que impedían el encogimiento correcto de los contenedores anidados.
+  - Implementado `min-height: 0` en columnas y pestañas junto con `box-sizing: border-box` en el contenedor de pestañas principal, forzando la activación correcta del scrollbar vertical (`overflow-y: auto`) en el panel de árbol de ramas (`#branch-tree-container`).
 
 ### v2.32.0 (2026-06-15 17:30)
 - Added: **Nomenclatura Jerárquica Estricta**.

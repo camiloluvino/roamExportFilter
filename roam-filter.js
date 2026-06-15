@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.31.1
-// Date: 2026-06-15 16:45
+// Version: 2.32.1
+// Date: 2026-06-15 19:00
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1612,13 +1612,13 @@ const promptUnifiedExport = (pageName, pageUid) => {
       </div>
       
       <!-- Tab content container -->
-      <div style="padding: 20px; flex: 1; min-height: 0; height: 0; display: flex; gap: 24px; overflow: hidden;">
+      <div style="padding: 20px; flex: 1; min-height: 0; box-sizing: border-box; display: flex; gap: 24px; overflow: hidden;">
         
         <!-- Left column: holds active tab content -->
-        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%;">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0;">
           
           <!-- Por Ramas content -->
-          <div id="content-branches" style="display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%;">
+          <div id="content-branches" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
             <!-- Interactive Search & Filtering + Depth Selector -->
             <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; flex-wrap: wrap;">
               <!-- Search field -->
@@ -1722,7 +1722,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
           </div>
           
           <!-- Por Páginas content -->
-          <div id="content-pages" style="display: none; flex-direction: column; flex: 1; min-height: 0; height: 100%;">
+          <div id="content-pages" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
             <!-- Search bar -->
             <div style="display: flex; gap: 8px; margin-bottom: 12px;">
               <input type="text" id="page-search-input" 
