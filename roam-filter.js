@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.30.1
-// Date: 2026-06-12 16:10
+// Version: 2.31.1
+// Date: 2026-06-15 16:45
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1550,7 +1550,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       </div>
       
       <!-- Tab content container -->
-      <div style="padding: 20px; flex: 1; min-height: 0; height: 0; display: flex; gap: 32px; overflow: hidden;">
+      <div style="padding: 20px; flex: 1; min-height: 0; height: 0; display: flex; gap: 24px; overflow: hidden;">
         
         <!-- Left column: holds active tab content -->
         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; height: 100%;">
@@ -1722,63 +1722,63 @@ const promptUnifiedExport = (pageName, pageUid) => {
         </div>
 
         <!-- Right column: Export options & Format settings (Global & Persistent) -->
-        <div style="width: 280px; flex-shrink: 0; overflow-y: auto; min-height: 0; box-sizing: border-box; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 12px;">
-          <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px;">⚙ Opciones de exportación</div>
-          <div>
+        <div style="width: 360px; flex-shrink: 0; overflow-y: auto; min-height: 0; box-sizing: border-box; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 14px;">
+          <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px; flex-shrink: 0;">⚙ Opciones de exportación</div>
+          <div style="flex-shrink: 0;">
             <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
             <div id="branch-naming-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">
               <button data-naming="block" class="active" style="padding: 4px 10px; font-size: 12px; border: 1px solid #137CBD; background: #137CBD; color: white; cursor: pointer; border-radius: 4px 0 0 4px;">Bloque</button>
               <button data-naming="page_block" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer;">Pág.+Bloque</button>
               <button data-naming="page" style="padding: 4px 10px; font-size: 12px; border: 1px solid #ccc; border-left: none; background: white; color: #666; cursor: pointer; border-radius: 0 4px 4px 0;">Página</button>
             </div>
-            <div id="branch-naming-preview" style="font-size: 11px; color: #888; margin-top: 6px; font-family: monospace;">Ej: nombre_del_bloque.md</div>
+            <div id="branch-naming-preview" style="font-size: 11px; color: #888; margin-top: 6px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ej: nombre_del_bloque.md</div>
           </div>
           
-          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+          <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
 
-          <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <label id="merge-export-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0;">
             <input type="checkbox" id="merge-export-enabled">
             <span>Combinar en archivo único</span>
           </label>
-          <div id="merge-filename-container" style="display: none; margin-top: -4px;">
+          <div id="merge-filename-container" style="display: none; margin-top: -4px; flex-shrink: 0;">
             <input type="text" id="merge-filename" 
               style="width: 100%; padding: 8px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;"
               placeholder="nombre_del_archivo"
             />
-            <div id="merge-filename-preview" style="font-size: 11px; color: #888; margin-top: 4px; font-family: monospace;">Ej: nombre_pagina_export.md</div>
+            <div id="merge-filename-preview" style="font-size: 11px; color: #888; margin-top: 4px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Ej: nombre_pagina_export.md</div>
           </div>
 
-          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+          <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
 
-          <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <label id="order-prefix-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0;">
             <input type="checkbox" id="order-prefix-enabled">
             <span>Agregar prefijo de orden (01_, 02_, ...)</span>
           </label>
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding-left: 24px; opacity: 0.5; margin-top: -6px;" id="order-descending-label">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; padding-left: 24px; opacity: 0.5; margin-top: -6px; flex-shrink: 0;" id="order-descending-label">
             <input type="checkbox" id="order-descending" disabled>
             <span>Orden descendente (..., 02_, 01_)</span>
           </label>
 
-          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+          <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
 
-          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0;">
             <input type="checkbox" id="shallow-export-enabled">
             <span>Solo texto visible (sin hijos)</span>
           </label>
-          <div id="shallow-export-hint" style="display: none; font-size: 11px; color: #888; padding-left: 24px; margin-top: -4px;">
+          <div id="shallow-export-hint" style="display: none; font-size: 11px; color: #888; padding-left: 24px; margin-top: -4px; flex-shrink: 0;">
             Extrae solo el texto raíz del nodo, sin anidamientos.
           </div>
           
-          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+          <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
 
           <!-- Persistent Favorite Tags Manager -->
-          <div id="favorite-tags-manager" style="display: flex; flex-direction: column; gap: 8px;">
+          <div id="favorite-tags-manager" style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
             <span style="font-size: 13px; color: #666; font-weight: 600; display: flex; align-items: center; gap: 4px;">🏷️ Tags Favoritos:</span>
             <div id="fav-tags-list-container" style="
               display: flex;
               flex-wrap: wrap;
               gap: 6px;
-              max-height: 100px;
+              max-height: 140px;
               overflow-y: auto;
               padding: 8px;
               border: 1px solid #ddd;
@@ -1810,10 +1810,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
             </div>
           </div>
 
-          <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+          <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
 
           <!-- Format Options (Moved here) -->
-          <div id="format-options-container" style="display: flex; flex-direction: column; gap: 8px;">
+          <div id="format-options-container" style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
             <div>
               <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Formato:</span>
               <div id="format-selector" style="display: flex; border-radius: 4px; overflow: hidden; width: fit-content;">

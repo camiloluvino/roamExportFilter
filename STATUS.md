@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-12 18:05
+> **Última actualización**: 2026-06-15 16:45
 
 ---
 
 ## Versión actual
 
-**2.31.0** (2026-06-12 18:05)
+**2.31.1** (2026-06-15 16:45)
 
 ---
 
@@ -40,6 +40,12 @@
 ---
 
 ## Historial reciente
+
+### v2.31.1 (2026-06-15 16:45)
+- Fixed: **Corrección visual y de scrollbar en la columna de Opciones de Exportación**.
+  - Agregado `flex-shrink: 0;` a todos los elementos hijos directos de la columna derecha para evitar que Flexbox los comprima, solucionando el problema donde los botones del final de la columna se aplastaban a líneas invisibles. Esto activa de forma correcta el scrollbar vertical (`overflow-y: auto`) de la columna ante desbordamientos de contenido.
+  - Aumentado el ancho de la columna de `280px` a `360px` y sus márgenes internos para dar más aire y espacio visual a las opciones.
+  - Añadido truncado de texto con puntos suspensivos (`text-overflow: ellipsis`) a las vistas previas de nomenclatura y nombre de archivo combinado.
 
 ### v2.31.0 (2026-06-12 18:05)
 - Added: **Exportación "Solo texto visible" (Shallow Export)**.
