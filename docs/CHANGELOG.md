@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.32.2] - 2026-06-15 20:25
+
+### Fixed
+- **Errores de exportación ZIP y descompresión en Windows**:
+  - Solucionado el error `0x80070057: El parámetro no es correcto` al descomprimir archivos ZIP en Windows. Se eliminan o reemplazan caracteres prohibidos (`< > : " | ? *`) por espacios en la función `sanitizeToCamelCase` antes del formateo a camelCase/PascalCase.
+  - Solucionado el error `0x80010135: Ruta de acceso demasiado larga` al descomprimir archivos ZIP en Windows. Se implementó un truncamiento inteligente que limita el tamaño del nombre del archivo final a un máximo de 120 caracteres (preservando la extensión `.md` o `.epub`) y el prefijo de namespaces de página a 80 caracteres.
+  - Se mejoró la limpieza de contenido en `generateRootFilename` para remover URLs y rutas locales absolutas/relativas (de Windows y Unix) antes de generar las primeras 5 palabras para el nombre, evitando nombres inflados gigantes.
+  - Corregido el problema de extensión duplicada (ej. `.md.md` o `.Md.md` → `.md`) en nombres de archivos.
+
 ## [2.32.1] - 2026-06-15 19:00
 
 ### Fixed

@@ -555,6 +555,9 @@ const sanitizeToCamelCase = (text, isCamel = false) => {
   // Remove markdown formatting
   clean = clean.replace(/[*_`#]/g, '');
   
+  // Replace Windows forbidden characters (< > : " | ? *) with spaces so they act as word boundaries
+  clean = clean.replace(/[<>:"|?*]/g, ' ');
+  
   // Split by spaces, dashes, slashes, backslashes
   const segments = clean.split(/[\s\-\\\/]+/).filter(Boolean);
   if (segments.length === 0) return '';
@@ -595,7 +598,13 @@ const generateRootFilename = (blockContent) => {
     title = boldMatch[1];
   } else {
     // Fallback: take first 5 words of clean block content (removing date link first if present)
-    const cleanContent = dateRemovedContent.replace(/\[\[([^\]]+)\]\]/g, '$1').replace(/[*_`#]/g, '');
+    // Clean up URLs and local paths (Windows & Unix) to prevent them from inflating word count/filename length
+    const cleanContent = dateRemovedContent
+      .replace(/\[\[([^\]]+)\]\]/g, '$1')
+      .replace(/[*_`#]/g, '')
+      .replace(/https?:\/\/[^\s]*/g, '')    // Remove URLs
+      .replace(/[A-Za-z]:\\[^\s]*/g, '')    // Remove Windows absolute paths
+      .replace(/\/[\w\d_.-]+[^\s]*/g, '');  // Remove Unix paths/slashes with text
     const words = cleanContent.split(/\s+/).filter(Boolean);
     title = words.slice(0, 5).join(' ');
   }
@@ -608,9 +617,47 @@ const generateRootFilename = (blockContent) => {
 // "entrevista/real/María Paz" → "Entrevista_Real_MariaPaz"
 const generatePageFilename = (fullTitle) => {
   if (!fullTitle) return 'untitled';
-  return fullTitle.split('/').map((segment) => {
+  let result = fullTitle.split('/').map((segment) => {
     return sanitizeToCamelCase(segment, false); // PascalCase each segment
   }).filter(Boolean).join('_') || 'untitled';
+
+  // Limit page namespace filename part to max 80 chars
+  if (result.length > 80) {
+    result = result.substring(0, 80);
+  }
+  return result;
+};
+
+// Sanitize final filename from any Windows forbidden characters (in case of manual inputs)
+// Also ensures there are no duplicate extensions (like .md.md) and truncates length to avoid Windows path errors (max 120 chars)
+const sanitizeFilename = (filename) => {
+  if (!filename) return '';
+  // Replace Windows forbidden characters: < > : " / \ | ? *
+  let safe = filename.replace(/[<>:"/\\|?*]/g, '_');
+  
+  // Fix double extensions case-insensitively (e.g. .md.md, .Md.md, .md.MD -> .md)
+  safe = safe.replace(/(\.[a-zA-Z0-9]+)(\.[a-zA-Z0-9]+)$/i, (match, p1, p2) => {
+    if (p1.toLowerCase() === p2.toLowerCase()) {
+      return p1;
+    }
+    return match;
+  });
+
+  // Truncate to maximum 120 characters to avoid Windows "path too long" error (0x80010135)
+  // We want to keep the extension intact, so we only truncate the base name part.
+  const lastDot = safe.lastIndexOf('.');
+  if (lastDot > 0) {
+    const name = safe.substring(0, lastDot);
+    const ext = safe.substring(lastDot);
+    const maxNameLen = 120 - ext.length;
+    if (name.length > maxNameLen) {
+      safe = name.substring(0, maxNameLen) + ext;
+    }
+  } else if (safe.length > 120) {
+    safe = safe.substring(0, 120);
+  }
+  
+  return safe;
 };
 
 // --- tree-builder.js ---
@@ -928,12 +975,13 @@ const generateFilename = (tagName) => {
 
 const downloadFile = (content, filename) => {
   try {
+    const safeFilename = sanitizeFilename(filename);
     const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
     link.href = url;
-    link.download = filename;
+    link.download = safeFilename;
     link.style.display = "none";
 
     document.body.appendChild(link);
@@ -954,10 +1002,11 @@ const downloadFile = (content, filename) => {
 // Download a blob directly (for EPUB files)
 const downloadBlob = (blob, filename) => {
   try {
+    const safeFilename = sanitizeFilename(filename);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = filename;
+    link.download = safeFilename;
     link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
@@ -3228,7 +3277,7 @@ const unifiedExport = async () => {
               const zip = new JSZip();
 
               for (const file of files) {
-                zip.file(file.filename, file.content);
+                zip.file(sanitizeFilename(file.filename), file.content);
               }
 
               const dateStr = generateDateString(new Date());
@@ -3362,7 +3411,7 @@ const unifiedExport = async () => {
             const zip = new JSZip();
 
             for (const f of files) {
-              zip.file(f.filename, f.isBlob ? f.blob : f.content);
+              zip.file(sanitizeFilename(f.filename), f.isBlob ? f.blob : f.content);
             }
 
             const dateStr = generateDateString(new Date());
@@ -3868,7 +3917,7 @@ const exportByRootBlocks = async () => {
 
         // Add all files to the ZIP
         for (const file of filesToExport) {
-          zip.file(file.filename, file.content);
+          zip.file(sanitizeFilename(file.filename), file.content);
         }
 
         // Generate ZIP blob

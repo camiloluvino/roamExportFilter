@@ -6,7 +6,7 @@
 
 ## Versión actual
 
-**2.32.1** (2026-06-15 19:00)
+**2.32.2** (2026-06-15 20:25)
 
 ---
 
@@ -40,6 +40,13 @@
 ---
 
 ## Historial reciente
+
+### v2.32.2 (2026-06-15 20:25)
+- Fixed: **Errores de exportación ZIP y descompresión en Windows (0x80070057 y 0x80010135)**.
+  - Eliminados/reemplazados caracteres prohibidos en Windows (`< > : " | ? *`) en `sanitizeToCamelCase` para evitar fallos de descompresión debido al carácter `:` de Roam.
+  - Implementado truncamiento del nombre de archivo final a un máximo de 120 caracteres y namespaces a 80 caracteres, previniendo errores de rutas demasiado largas en Windows.
+  - Remoción de URLs y rutas absolutas/relativas locales de Windows/Unix del texto de bloque al generar nombres de archivo en `generateRootFilename`.
+  - Corregida la extensión duplicada (ej. `.md.md` → `.md`) en nombres de archivos.
 
 ### v2.32.1 (2026-06-15 19:00)
 - Fixed: **Falta de scroll en el panel principal (ramas/páginas)**.
