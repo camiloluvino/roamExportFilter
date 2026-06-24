@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-15 19:00
+> **Última actualización**: 2026-06-24 12:00
 
 ---
 
 ## Versión actual
 
-**2.32.2** (2026-06-15 20:25)
+**2.33.0** (2026-06-24 12:00)
 
 ---
 
@@ -14,11 +14,13 @@
 
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
-| **Smart Export** | ✅ Estable | Modal unificado con 2 pestañas (Por Ramas, Por Páginas) con buscador interactivo y administrador persistente de tags favoritos |
+| **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas (Por Ramas, Por Páginas, Presets) con buscador interactivo y administrador de tags favoritos |
+| **Saved Presets** | ✅ Nuevo | Pestaña "Presets" para guardar/cargar selecciones de bloques cross-page localmente en localStorage |
+| **Copy UIDs** | ✅ Nuevo | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
 | **Shallow Export** | ✅ Nuevo | Opción "Solo texto visible" para omitir sub-bloques anidados |
-| **Clean Copy** | ✅ Nuevo | Botón "Copiar al portapapeles" que exporta markdown en texto plano sin metadatos |
+| **Clean Copy** | ✅ Estable | Renombrado a "Copiar Texto" (copia markdown en texto plano sin metadatos) |
 | **Export by Root Blocks** | ✅ Estable | Exporta cada bloque raíz como archivo separado |
 | **ZIP Export (>5 files)** | ✅ Estable | Bundling automático con JSZip |
 | **Custom Naming** | ✅ Estable | Opciones de nomenclatura y prevención de duplicados |
@@ -40,6 +42,16 @@
 ---
 
 ## Historial reciente
+
+### v2.33.0 (2026-06-24 12:00)
+- Added: **Nueva pestaña de Presets (Selecciones Guardadas)**.
+  - Pestaña "📌 Presets" en el modal para gestionar conjuntos de bloques guardados de manera persistente.
+  - Soporte cross-page: Permite copiar texto/UIDs de presets de cualquier página, y navegar/cargar automáticamente si el preset es de otra página.
+  - CRUD completo para presets con formulario inline y almacenamiento en `localStorage`.
+- Added: **Copiar referencias de bloques y páginas (Copiar UIDs)**.
+  - Nuevo botón "🔗 Copiar UIDs" en el footer para copiar referencias en formato `((uid))` (o referencias `[[Página]]` en el tab Por Páginas).
+- Changed: **Renombrado de botón de copia principal**.
+  - Renombrado de "Copiar al Portapapeles" a "📋 Copiar Texto" para mayor claridad.
 
 ### v2.32.2 (2026-06-15 20:25)
 - Fixed: **Errores de exportación ZIP y descompresión en Windows (0x80070057 y 0x80010135)**.

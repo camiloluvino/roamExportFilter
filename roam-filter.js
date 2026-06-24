@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.32.1
-// Date: 2026-06-15 19:00
+// Version: 2.33.0
+// Date: 2026-06-24 12:00
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1655,6 +1655,15 @@ const promptUnifiedExport = (pageName, pageUid) => {
               <button id="tab-pages" style="${tabStyle(false)}">📄 Por Páginas</button>
             </div>
           </div>
+          <!-- Separator -->
+          <div style="border-left: 2px solid #ddd; align-self: stretch; margin: 6px 0;"></div>
+          <!-- "Guardados" group -->
+          <div style="flex: 0 0 auto;">
+            <div style="font-size: 11px; color: #999; padding: 6px 12px 2px 12px; text-align: center;">🗂️ Guardados</div>
+            <div style="display: flex;">
+              <button id="tab-presets" style="${tabStyle(false)}">📌 Presets</button>
+            </div>
+          </div>
           <div style="flex: 1;"></div>
           <span id="page-name-display" style="padding: 12px 16px; font-size: 12px; color: #888; align-self: center;">${pageName}</span>
         </div>
@@ -1723,7 +1732,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
               <span style="font-size: 13px; color: #666;">
                 Selecciona las ramas que deseas exportar:
               </span>
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; align-items: center;">
                 <button id="expand-all-branches" style="
                   padding: 4px 12px;
                   font-size: 12px;
@@ -1754,6 +1763,19 @@ const promptUnifiedExport = (pageName, pageUid) => {
                   cursor: pointer;
                   transition: all 0.2s;
                 ">☑ Seleccionar todo</button>
+                <button id="save-as-preset" style="
+                  padding: 4px 12px;
+                  font-size: 12px;
+                  border: 1px solid #28a745;
+                  border-radius: 4px;
+                  background: white;
+                  color: #28a745;
+                  cursor: pointer;
+                  transition: all 0.2s;
+                " onmouseover="this.style.background='#eafaf1'" onmouseout="this.style.background='white'"
+                  title="Guardar selección actual como preset">
+                  💾 Guardar Preset
+                </button>
               </div>
             </div>
             <div id="branch-filter-error" style="display: none; padding: 8px 12px; margin-bottom: 8px; background: #fff3f3; border: 1px solid #DC143C; border-radius: 4px; color: #DC143C; font-size: 13px;"></div>
@@ -1827,6 +1849,29 @@ const promptUnifiedExport = (pageName, pageUid) => {
                 placeholder="Ej: #resumen"
                 disabled
               />
+            </div>
+          </div>
+
+          <!-- Presets content -->
+          <div id="content-presets" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <p style="margin: 0; font-size: 14px; color: #666;">
+                Selecciones de bloques preguardadas (presets) para reutilizar en cualquier momento:
+              </p>
+            </div>
+            <div id="presets-list-container" style="
+              border: 1px solid #e0e0e0;
+              border-radius: 4px;
+              padding: 12px;
+              flex: 1;
+              min-height: 0;
+              overflow-y: auto;
+              background: #fafafa;
+              display: flex;
+              flex-direction: column;
+              gap: 12px;
+            ">
+              <!-- Rendered dynamically -->
             </div>
           </div>
 
@@ -1989,9 +2034,15 @@ const promptUnifiedExport = (pageName, pageUid) => {
             style="padding: 10px 20px; font-size: 14px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">
             Cancelar
           </button>
+          <button id="unified-copy-uids" 
+            style="padding: 10px 20px; font-size: 14px; border: 1px solid #8A3707; border-radius: 4px; background: white; color: #8A3707; cursor: pointer;"
+            title="Copiar referencias de bloques ((uid)) de las ramas seleccionadas">
+            🔗 Copiar UIDs
+          </button>
           <button id="unified-copy" 
-            style="padding: 10px 20px; font-size: 14px; border: 1px solid #137CBD; border-radius: 4px; background: white; color: #137CBD; cursor: pointer;">
-            Copiar al Portapapeles
+            style="padding: 10px 20px; font-size: 14px; border: 1px solid #137CBD; border-radius: 4px; background: white; color: #137CBD; cursor: pointer;"
+            title="Copiar texto markdown de las ramas seleccionadas">
+            📋 Copiar Texto
           </button>
           <button id="unified-export" 
             style="padding: 10px 20px; font-size: 14px; border: none; border-radius: 4px; background: #137CBD; color: white; cursor: pointer;">
@@ -2007,8 +2058,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
     // Get elements
     const tabBranches = document.getElementById('tab-branches');
     const tabPages = document.getElementById('tab-pages');
+    const tabPresets = document.getElementById('tab-presets');
     const contentBranches = document.getElementById('content-branches');
     const contentPages = document.getElementById('content-pages');
+    const contentPresets = document.getElementById('content-presets');
     const branchNamingSelector = document.getElementById('branch-naming-selector');
     const branchNamingPreview = document.getElementById('branch-naming-preview');
     const orderPrefixEnabled = document.getElementById('order-prefix-enabled');
@@ -2017,7 +2070,9 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const selectionInfo = document.getElementById('selection-info');
     const cancelBtn = document.getElementById('unified-cancel');
     const copyBtn = document.getElementById('unified-copy');
+    const copyUidsBtn = document.getElementById('unified-copy-uids');
     const exportBtn = document.getElementById('unified-export');
+    const savePresetBtn = document.getElementById('save-as-preset');
     const shallowExportEnabled = document.getElementById('shallow-export-enabled');
     const shallowExportHint = document.getElementById('shallow-export-hint');
     const treeContainer = document.getElementById('branch-tree-container');
@@ -2057,6 +2112,380 @@ const promptUnifiedExport = (pageName, pageUid) => {
       structure: 'hierarchical'
     };
 
+    // Presets storage helper
+    const getSavedPresets = () => {
+      const stored = localStorage.getItem('roam-export-presets');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error("Error reading presets", e);
+        }
+      }
+      return [];
+    };
+
+    const savePresets = (presets) => {
+      localStorage.setItem('roam-export-presets', JSON.stringify(presets));
+    };
+
+    const getMarkdownForUids = async (uids) => {
+      const allSections = [];
+      for (const uid of uids) {
+        try {
+          const branchTree = getBlockWithDescendants(uid);
+          if (!branchTree) continue;
+          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+          if (markdown) {
+            allSections.push(markdown);
+          }
+        } catch (e) {
+          console.error(`Error pulling block for markdown: ${uid}`, e);
+        }
+      }
+      return allSections.join('\n\n');
+    };
+
+    // Dialog for saving preset
+    const showPresetSaveDialog = (uids, pName, pUid) => {
+      const dialogOverlay = document.createElement('div');
+      dialogOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.4);
+        z-index: 10005;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      `;
+
+      const count = uids.length;
+      
+      dialog.innerHTML = `
+        <div style="font-weight: bold; font-size: 15px; color: #333;">Guardar Selección como Preset</div>
+        <div style="font-size: 13px; color: #666;">Se guardarán ${count} bloques seleccionados de "${pName}".</div>
+        <div>
+          <label style="display: block; font-size: 12px; color: #555; margin-bottom: 4px;">Nombre del Preset:</label>
+          <input type="text" id="preset-name-input" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px;" placeholder="Ej: Resumen del Libro...">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+          <button id="preset-dialog-cancel" style="padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Cancelar</button>
+          <button id="preset-dialog-save" style="padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; background: #28a745; color: white; cursor: pointer;">Guardar</button>
+        </div>
+      `;
+
+      dialogOverlay.appendChild(dialog);
+      modal.appendChild(dialogOverlay);
+
+      const nameInput = dialogOverlay.querySelector('#preset-name-input');
+      nameInput.focus();
+
+      const close = () => {
+        if (dialogOverlay.parentNode) {
+          dialogOverlay.parentNode.removeChild(dialogOverlay);
+        }
+      };
+
+      dialogOverlay.querySelector('#preset-dialog-cancel').addEventListener('click', close);
+
+      const doSave = () => {
+        const name = nameInput.value.trim();
+        if (!name) {
+          nameInput.style.borderColor = '#DC143C';
+          nameInput.focus();
+          return;
+        }
+
+        let preview = '';
+        try {
+          const firstUid = uids[0];
+          const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', firstUid]);
+          if (blockData && blockData[':block/string']) {
+            const cleanStr = blockData[':block/string'].trim().replace(/[\[\]]/g, '');
+            preview = cleanStr.substring(0, 45) + (cleanStr.length > 45 ? '...' : '');
+          }
+        } catch (e) {
+          console.error("Error pulling block preview", e);
+        }
+
+        const description = `${count} bloques` + (preview ? ` ("${preview}")` : '');
+
+        const newPreset = {
+          id: 'preset_' + Date.now(),
+          name,
+          description,
+          createdAt: new Date().toISOString(),
+          pageTitle: pName,
+          pageUid: pUid,
+          blockUids: [...uids],
+          blockCount: count
+        };
+
+        const presets = getSavedPresets();
+        presets.unshift(newPreset);
+        savePresets(presets);
+
+        close();
+        showNotification(`✓ Preset "${name}" guardado con éxito`, '#28a745');
+      };
+
+      dialogOverlay.querySelector('#preset-dialog-save').addEventListener('click', doSave);
+      nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSave();
+        if (e.key === 'Escape') close();
+      });
+    };
+
+    // Render presets list
+    const renderPresetsList = () => {
+      const container = document.getElementById('presets-list-container');
+      const presets = getSavedPresets();
+
+      if (presets.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: #999; padding: 40px 20px; font-size: 14px;">
+            No tienes presets guardados todavía.<br>
+            Ve a la pestaña <b>🌳 Por Ramas</b>, selecciona bloques y haz clic en <b>💾 Guardar Preset</b>.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = presets.map(preset => {
+        const dateStr = new Date(preset.createdAt).toLocaleDateString(undefined, {
+          day: 'numeric', month: 'short', year: 'numeric'
+        });
+        return `
+          <div class="preset-item" data-id="${preset.id}" style="
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 14px;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: all 0.2s;
+            position: relative;
+          " onmouseover="this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+            <button class="delete-preset-btn" data-id="${preset.id}" style="
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              background: none;
+              border: none;
+              color: #a0aec0;
+              cursor: pointer;
+              font-size: 16px;
+              padding: 4px 8px;
+              line-height: 1;
+              border-radius: 4px;
+            " onmouseover="this.style.color='#e53e3e'; this.style.background='#fff5f5';" onmouseout="this.style.color='#a0aec0'; this.style.background='none';">✕</button>
+            
+            <div>
+              <div style="font-weight: 600; font-size: 14px; color: #2d3748; padding-right: 24px;">📌 ${preset.name}</div>
+              <div style="font-size: 12px; color: #718096; margin-top: 4px;">
+                ${preset.description} &middot; Origen: <b>${preset.pageTitle}</b> &middot; ${dateStr}
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 8px; margin-top: 4px;">
+              <button class="preset-copy-text" data-id="${preset.id}" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: white;
+                color: #137CBD;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='white'">
+                📋 Copiar Texto
+              </button>
+              <button class="preset-copy-uids" data-id="${preset.id}" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #8A3707;
+                border-radius: 4px;
+                background: white;
+                color: #8A3707;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              " onmouseover="this.style.background='#fffaf0'" onmouseout="this.style.background='white'">
+                🔗 Copiar UIDs
+              </button>
+              <button class="preset-load" data-id="${preset.id}" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #28a745;
+                border-radius: 4px;
+                background: white;
+                color: #28a745;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              " onmouseover="this.style.background='#f6fff9'" onmouseout="this.style.background='white'">
+                📂 Cargar
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Add event listeners for preset actions
+      container.querySelectorAll('.delete-preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.dataset.id;
+          const name = presets.find(p => p.id === id)?.name || '';
+          if (confirm(`¿Estás seguro de que quieres eliminar el preset "${name}"?`)) {
+            const updated = getSavedPresets().filter(p => p.id !== id);
+            savePresets(updated);
+            renderPresetsList();
+            showNotification('Preset eliminado', '#718096');
+          }
+        });
+      });
+
+      container.querySelectorAll('.preset-copy-uids').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const preset = presets.find(p => p.id === id);
+          if (!preset) return;
+          const uidText = preset.blockUids.map(uid => `((${uid}))`).join('\n');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(uidText)
+              .then(() => showNotification(`✓ ${preset.blockUids.length} UIDs copiados`, '#28a745'))
+              .catch(() => showNotification('✗ Error al copiar UIDs', '#DC143C'));
+          }
+        });
+      });
+
+      container.querySelectorAll('.preset-copy-text').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const preset = presets.find(p => p.id === id);
+          if (!preset) return;
+
+          showNotification('Procesando bloques...', '#137CBD');
+          
+          try {
+            const markdown = await getMarkdownForUids(preset.blockUids);
+            if (!markdown) {
+              showNotification('⚠️ Bloques vacíos o ya no existen', '#e0a800');
+              return;
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(markdown)
+                .then(() => showNotification(`✓ Texto copiado (${preset.blockUids.length} bloques)`, '#28a745'))
+                .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
+            }
+          } catch (e) {
+            console.error(e);
+            showNotification('✗ Error al procesar bloques', '#DC143C');
+          }
+        });
+      });
+
+      container.querySelectorAll('.preset-load').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const id = btn.dataset.id;
+          const preset = presets.find(p => p.id === id);
+          if (!preset) return;
+
+          if (preset.pageUid === pageUid) {
+            switchTab('branches');
+            treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
+              cb.checked = false;
+              cb.indeterminate = false;
+            });
+
+            let markedCount = 0;
+            preset.blockUids.forEach(uid => {
+              const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
+              if (cb) {
+                cb.checked = true;
+                markedCount++;
+                
+                const container = cb.closest('.tree-node');
+                if (container) {
+                  const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+                  descendantCheckboxes.forEach(childCb => {
+                    childCb.checked = true;
+                    childCb.indeterminate = false;
+                  });
+
+                  let parentContainer = container.parentElement.closest('.tree-node');
+                  while (parentContainer) {
+                    const parentCb = parentContainer.querySelector('.branch-checkbox');
+                    if (parentCb) {
+                      const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+                      if (allDescendants.length > 0) {
+                        const allChecked = allDescendants.every(c => c.checked);
+                        const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                        if (allChecked) {
+                          parentCb.checked = true;
+                          parentCb.indeterminate = false;
+                        } else if (someChecked) {
+                          parentCb.checked = false;
+                          parentCb.indeterminate = true;
+                        } else {
+                          parentCb.checked = false;
+                          parentCb.indeterminate = false;
+                        }
+                      }
+                    }
+                    parentContainer = parentContainer.parentElement.closest('.tree-node');
+                  }
+                }
+              }
+            });
+
+            updateBranchCount();
+            updateSelectAllLabel();
+            showNotification(`✓ Cargados ${markedCount} de ${preset.blockUids.length} bloques`, '#28a745');
+          } else {
+            if (confirm(`Este preset es de la página "${preset.pageTitle}". ¿Quieres navegar a esa página para cargarlo?`)) {
+              cleanup();
+              if (window.roamAlphaAPI && window.roamAlphaAPI.ui && window.roamAlphaAPI.ui.mainWindow) {
+                window.roamAlphaAPI.ui.mainWindow.openPage({ page: { uid: preset.pageUid } });
+                
+                sessionStorage.setItem('roam-export-auto-load-preset', JSON.stringify({
+                  presetId: preset.id,
+                  pageUid: preset.pageUid
+                }));
+
+                setTimeout(() => {
+                  unifiedExport();
+                }, 1000);
+              } else {
+                showNotification('No se pudo navegar automáticamente', '#DC143C');
+              }
+            }
+          }
+        });
+      });
+    };
+
     // Tab switching
     const pageNameDisplay = document.getElementById('page-name-display');
     const switchTab = (tab) => {
@@ -2064,8 +2493,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
       // Reset all tabs
       tabBranches.style.cssText = tabStyle(false);
       tabPages.style.cssText = tabStyle(false);
+      tabPresets.style.cssText = tabStyle(false);
       contentBranches.style.display = 'none';
       contentPages.style.display = 'none';
+      contentPresets.style.display = 'none';
       selectionInfo.textContent = '';
 
       if (tab === 'branches') {
@@ -2073,16 +2504,31 @@ const promptUnifiedExport = (pageName, pageUid) => {
         contentBranches.style.display = 'flex';
         pageNameDisplay.style.display = '';
         updateBranchCount();
+        copyBtn.style.display = '';
+        copyUidsBtn.style.display = '';
+        exportBtn.style.display = '';
       } else if (tab === 'pages') {
         tabPages.style.cssText = tabStyle(true);
         contentPages.style.display = 'flex';
         pageNameDisplay.style.display = 'none';
         if (window._updatePageCount) window._updatePageCount();
+        copyBtn.style.display = '';
+        copyUidsBtn.style.display = '';
+        exportBtn.style.display = '';
+      } else if (tab === 'presets') {
+        tabPresets.style.cssText = tabStyle(true);
+        contentPresets.style.display = 'flex';
+        pageNameDisplay.style.display = 'none';
+        copyBtn.style.display = 'none';
+        copyUidsBtn.style.display = 'none';
+        exportBtn.style.display = 'none';
+        renderPresetsList();
       }
     };
 
     tabBranches.addEventListener('click', () => switchTab('branches'));
     tabPages.addEventListener('click', () => switchTab('pages'));
+    tabPresets.addEventListener('click', () => switchTab('presets'));
 
     // Depth selector logic
     const depthSelector = document.getElementById('depth-selector');
@@ -3014,6 +3460,53 @@ const promptUnifiedExport = (pageName, pageUid) => {
     exportBtn.addEventListener('click', () => triggerAction('export'));
     copyBtn.addEventListener('click', () => triggerAction('copy'));
 
+    // Copy UIDs button click
+    copyUidsBtn.addEventListener('click', () => {
+      if (activeTab === 'branches') {
+        const selectedUids = getSelectedBranchUids();
+        if (selectedUids.length === 0) {
+          alert('Por favor selecciona al menos una rama para copiar sus UIDs.');
+          return;
+        }
+        const uidText = selectedUids.map(uid => `((${uid}))`).join('\n');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(uidText)
+            .then(() => showNotification(`✓ ${selectedUids.length} UIDs copiados al portapapeles`, '#28a745'))
+            .catch(() => showNotification('✗ Error al copiar UIDs', '#DC143C'));
+        } else {
+          showNotification('✗ Portapapeles no disponible', '#DC143C');
+        }
+      } else if (activeTab === 'pages') {
+        const selectedPageCheckboxes = pagesListContainer.querySelectorAll('.page-checkbox:checked');
+        const selectedPages = Array.from(selectedPageCheckboxes).map(cb => ({
+          uid: cb.dataset.uid,
+          title: cb.dataset.title
+        }));
+        if (selectedPages.length === 0) {
+          alert('Por favor selecciona al menos una página.');
+          return;
+        }
+        const pageText = selectedPages.map(p => `[[${p.title}]]`).join('\n');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(pageText)
+            .then(() => showNotification(`✓ ${selectedPages.length} referencias de páginas copiadas`, '#28a745'))
+            .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
+        } else {
+          showNotification('✗ Portapapeles no disponible', '#DC143C');
+        }
+      }
+    });
+
+    // Save Preset button click
+    savePresetBtn.addEventListener('click', () => {
+      const selectedUids = getSelectedBranchUids();
+      if (selectedUids.length === 0) {
+        alert('Por favor selecciona al menos un bloque para guardar.');
+        return;
+      }
+      showPresetSaveDialog(selectedUids, pageName, pageUid);
+    });
+
     // Close on overlay click
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
@@ -3035,6 +3528,66 @@ const promptUnifiedExport = (pageName, pageUid) => {
     // Focus search input on open
     if (branchSearchInput) {
       branchSearchInput.focus();
+    }
+
+    // Auto-load preset from sessionStorage if navigation happened
+    try {
+      const autoLoad = JSON.parse(sessionStorage.getItem('roam-export-auto-load-preset') || 'null');
+      if (autoLoad && autoLoad.pageUid === pageUid) {
+        sessionStorage.removeItem('roam-export-auto-load-preset');
+        const presetId = autoLoad.presetId;
+        setTimeout(() => {
+          const presets = getSavedPresets();
+          const preset = presets.find(p => p.id === presetId);
+          if (preset) {
+            let markedCount = 0;
+            preset.blockUids.forEach(uid => {
+              const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
+              if (cb) {
+                cb.checked = true;
+                markedCount++;
+                
+                const container = cb.closest('.tree-node');
+                if (container) {
+                  const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+                  descendantCheckboxes.forEach(childCb => {
+                    childCb.checked = true;
+                    childCb.indeterminate = false;
+                  });
+
+                  let parentContainer = container.parentElement.closest('.tree-node');
+                  while (parentContainer) {
+                    const parentCb = parentContainer.querySelector('.branch-checkbox');
+                    if (parentCb) {
+                      const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+                      if (allDescendants.length > 0) {
+                        const allChecked = allDescendants.every(c => c.checked);
+                        const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                        if (allChecked) {
+                          parentCb.checked = true;
+                          parentCb.indeterminate = false;
+                        } else if (someChecked) {
+                          parentCb.checked = false;
+                          parentCb.indeterminate = true;
+                        } else {
+                          parentCb.checked = false;
+                          parentCb.indeterminate = false;
+                        }
+                      }
+                    }
+                    parentContainer = parentContainer.parentElement.closest('.tree-node');
+                  }
+                }
+              }
+            });
+            updateBranchCount();
+            updateSelectAllLabel();
+            showNotification(`✓ Cargados ${markedCount} bloques del preset "${preset.name}"`, '#28a745');
+          }
+        }, 300);
+      }
+    } catch (e) {
+      console.error("Error auto-loading preset:", e);
     }
   });
 };

@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.33.0] - 2026-06-24 12:00
+
+### Added
+- **Nueva pestaña de Presets (Selecciones Guardadas)**:
+  - Nueva pestaña "📌 Presets" en el header principal del modal para gestionar selecciones pre-guardadas de bloques cross-page.
+  - Nuevo botón **"💾 Guardar Preset"** en la barra de controles de "Por Ramas" para guardar los bloques seleccionados de la página actual.
+  - Formulario inline premium para nombrar el preset, con generación automática de descripción (número de bloques y vista previa de texto).
+  - Soporte de acciones rápidas para cada preset guardado:
+    - **Cargar**: Selecciona automáticamente los checkboxes guardados en el árbol. Si el preset es de otra página, ofrece navegar a ella de forma automática y carga la selección después de la navegación.
+    - **Copiar Texto**: Obtiene el contenido actual de los bloques usando Datalog de Roam y copia el Markdown al portapapeles.
+    - **Copiar UIDs**: Copia las referencias de los bloques en formato `((uid))`.
+    - **Eliminar**: Borra el preset del almacenamiento persistente.
+  - Persistencia total de presets en `localStorage` bajo la clave `roam-export-presets`.
+- **Botón "Copiar UIDs" en footer**:
+  - Nuevo botón **"🔗 Copiar UIDs"** en el pie del modal principal.
+  - Copia al portapapeles todos los UIDs de los bloques seleccionados en formato `((uid))`, separados por línea.
+  - En la pestaña de páginas, copia las referencias a las páginas seleccionadas en formato `[[Nombre de Página]]`.
+
+### Changed
+- **Renombrado de botón de copia principal**:
+  - Se renombró el botón "Copiar al Portapapeles" a **"📋 Copiar Texto"** en el modal, haciéndolo más claro y descriptivo.
+
+---
+
 ## [2.32.2] - 2026-06-15 20:25
 
 ### Fixed
