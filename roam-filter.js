@@ -2251,6 +2251,88 @@ const promptUnifiedExport = (pageName, pageUid) => {
       });
     };
 
+    // Dialog for renaming preset
+    const showPresetRenameDialog = (preset) => {
+      const dialogOverlay = document.createElement('div');
+      dialogOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.4);
+        z-index: 10005;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      `;
+
+      const dialog = document.createElement('div');
+      dialog.style.cssText = `
+        background: white;
+        padding: 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      `;
+
+      dialog.innerHTML = `
+        <div style="font-weight: bold; font-size: 15px; color: #333;">Renombrar Preset</div>
+        <div>
+          <label style="display: block; font-size: 12px; color: #555; margin-bottom: 4px;">Nombre del Preset:</label>
+          <input type="text" id="preset-rename-input" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px;" placeholder="Ej: Resumen del Libro...">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
+          <button id="preset-rename-cancel" style="padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Cancelar</button>
+          <button id="preset-rename-save" style="padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; background: #28a745; color: white; cursor: pointer;">Renombrar</button>
+        </div>
+      `;
+
+      dialogOverlay.appendChild(dialog);
+      modal.appendChild(dialogOverlay);
+
+      const nameInput = dialogOverlay.querySelector('#preset-rename-input');
+      nameInput.value = preset.name;
+      nameInput.focus();
+      nameInput.select();
+
+      const close = () => {
+        if (dialogOverlay.parentNode) {
+          dialogOverlay.parentNode.removeChild(dialogOverlay);
+        }
+      };
+
+      dialogOverlay.querySelector('#preset-rename-cancel').addEventListener('click', close);
+
+      const doRename = () => {
+        const newName = nameInput.value.trim();
+        if (!newName) {
+          nameInput.style.borderColor = '#DC143C';
+          nameInput.focus();
+          return;
+        }
+
+        const presets = getSavedPresets();
+        const index = presets.findIndex(p => p.id === preset.id);
+        if (index !== -1) {
+          presets[index].name = newName;
+          savePresets(presets);
+          showNotification(`✓ Preset renombrado a "${newName}"`, '#28a745');
+          renderPresetsList();
+        }
+        close();
+      };
+
+      dialogOverlay.querySelector('#preset-rename-save').addEventListener('click', doRename);
+      nameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doRename();
+        if (e.key === 'Escape') close();
+      });
+    };
+
     // Render presets list
     const renderPresetsList = () => {
       const container = document.getElementById('presets-list-container');
@@ -2270,6 +2352,41 @@ const promptUnifiedExport = (pageName, pageUid) => {
         const dateStr = new Date(preset.createdAt).toLocaleDateString(undefined, {
           day: 'numeric', month: 'short', year: 'numeric'
         });
+        const isSamePage = preset.pageUid === pageUid;
+        const mergeBtnHtml = isSamePage 
+          ? `
+              <button class="preset-merge" data-id="${preset.id}" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #722ed1;
+                border-radius: 4px;
+                background: white;
+                color: #722ed1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              " onmouseover="this.style.background='#f9f0ff'" onmouseout="this.style.background='white'">
+                🔄 Fusionar
+              </button>
+            `
+          : `
+              <button class="preset-merge" data-id="${preset.id}" disabled style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #d9d9d9;
+                border-radius: 4px;
+                background: #f5f5f5;
+                color: #bfbfbf;
+                cursor: not-allowed;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              " title="Solo se puede fusionar desde la página de origen del preset (${preset.pageTitle})">
+                🔄 Fusionar
+              </button>
+            `;
+
         return `
           <div class="preset-item" data-id="${preset.id}" style="
             border: 1px solid #e2e8f0;
@@ -2303,7 +2420,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
               </div>
             </div>
             
-            <div style="display: flex; gap: 8px; margin-top: 4px;">
+            <div style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
               <button class="preset-copy-text" data-id="${preset.id}" style="
                 padding: 6px 12px;
                 font-size: 12px;
@@ -2346,6 +2463,21 @@ const promptUnifiedExport = (pageName, pageUid) => {
               " onmouseover="this.style.background='#f6fff9'" onmouseout="this.style.background='white'">
                 📂 Cargar
               </button>
+              <button class="preset-rename" data-id="${preset.id}" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #5c7080;
+                border-radius: 4px;
+                background: white;
+                color: #5c7080;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+              " onmouseover="this.style.background='#f5f8fa'" onmouseout="this.style.background='white'">
+                ✏️ Renombrar
+              </button>
+              ${mergeBtnHtml}
             </div>
           </div>
         `;
@@ -2480,6 +2612,66 @@ const promptUnifiedExport = (pageName, pageUid) => {
               } else {
                 showNotification('No se pudo navegar automáticamente', '#DC143C');
               }
+            }
+          }
+        });
+      });
+
+      container.querySelectorAll('.preset-rename').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const preset = presets.find(p => p.id === id);
+          if (preset) {
+            showPresetRenameDialog(preset);
+          }
+        });
+      });
+
+      container.querySelectorAll('.preset-merge').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const preset = presets.find(p => p.id === id);
+          if (!preset) return;
+
+          const selectedUids = getSelectedBranchUids();
+          if (selectedUids.length === 0) {
+            alert('Por favor selecciona al menos un bloque en el árbol para fusionar con este preset.');
+            return;
+          }
+
+          const currentUidsSet = new Set(preset.blockUids);
+          const newUids = selectedUids.filter(uid => !currentUidsSet.has(uid));
+
+          if (newUids.length === 0) {
+            showNotification('Todos los bloques seleccionados ya están en este preset', '#e0a800');
+            return;
+          }
+
+          if (confirm(`¿Estás seguro de que quieres añadir ${newUids.length} bloques nuevos al preset "${preset.name}"?`)) {
+            const mergedUids = [...preset.blockUids, ...newUids];
+            
+            let preview = '';
+            try {
+              const firstUid = mergedUids[0];
+              const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', firstUid]);
+              if (blockData && blockData[':block/string']) {
+                const cleanStr = blockData[':block/string'].trim().replace(/[\[\]]/g, '');
+                preview = cleanStr.substring(0, 45) + (cleanStr.length > 45 ? '...' : '');
+              }
+            } catch (e) {
+              console.error("Error pulling block preview", e);
+            }
+
+            const updatedPresets = getSavedPresets();
+            const idx = updatedPresets.findIndex(p => p.id === preset.id);
+            if (idx !== -1) {
+              updatedPresets[idx].blockUids = mergedUids;
+              updatedPresets[idx].blockCount = mergedUids.length;
+              updatedPresets[idx].description = `${mergedUids.length} bloques` + (preview ? ` ("${preview}")` : '');
+              updatedPresets[idx].createdAt = new Date().toISOString();
+              savePresets(updatedPresets);
+              showNotification(`✓ Se añadieron ${newUids.length} bloques al preset "${preset.name}"`, '#28a745');
+              renderPresetsList();
             }
           }
         });

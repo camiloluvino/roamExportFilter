@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.34.0] - 2026-06-24 13:00
+
+### Added
+- **Edición de Presets (Selecciones Guardadas)**:
+  - Posibilidad de **Renombrar** presets existentes mediante un botón **"✏️ Renombrar"** que abre un diálogo modal premium pre-rellenado con el nombre actual.
+  - Posibilidad de **Fusionar** nuevos bloques a un preset existente con el botón **"🔄 Fusionar"**. Los bloques seleccionados en el árbol de ramas se añaden a los ya guardados en el preset, eliminando duplicados y actualizando la descripción (conteo de bloques y preview) y la fecha de creación.
+  - Habilitación adaptativa: el botón "🔄 Fusionar" solo se activa si el usuario se encuentra en la misma página de Roam que originó el preset. Para presets de otras páginas se muestra deshabilitado e incluye un tooltip explicativo.
+
+---
+
 ## [2.33.0] - 2026-06-24 12:00
 
 ### Added

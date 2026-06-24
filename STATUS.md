@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-24 12:00
+> **Última actualización**: 2026-06-24 13:00
 
 ---
 
 ## Versión actual
 
-**2.33.0** (2026-06-24 12:00)
+**2.34.0** (2026-06-24 13:00)
 
 ---
 
@@ -15,8 +15,8 @@
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
 | **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas (Por Ramas, Por Páginas, Presets) con buscador interactivo y administrador de tags favoritos |
-| **Saved Presets** | ✅ Nuevo | Pestaña "Presets" para guardar/cargar selecciones de bloques cross-page localmente en localStorage |
-| **Copy UIDs** | ✅ Nuevo | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
+| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques cross-page localmente. Ahora con soporte para **Renombrar** y **Fusionar** bloques de forma interactiva |
+| **Copy UIDs** | ✅ Estable | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
 | **Shallow Export** | ✅ Nuevo | Opción "Solo texto visible" para omitir sub-bloques anidados |
@@ -42,6 +42,12 @@
 ---
 
 ## Historial reciente
+
+### v2.34.0 (2026-06-24 13:00)
+- Added: **Edición de Presets (Renombrar y Fusionar)**.
+  - Botón "✏️ Renombrar" para cambiar el nombre del preset directamente en un modal popup.
+  - Botón "🔄 Fusionar" para agregar bloques nuevos del árbol al preset existente, eliminando duplicados.
+  - Comportamiento adaptativo: El botón "🔄 Fusionar" solo se habilita si el preset corresponde a la página actual, incluyendo un tooltip detallado de ayuda.
 
 ### v2.33.0 (2026-06-24 12:00)
 - Added: **Nueva pestaña de Presets (Selecciones Guardadas)**.
