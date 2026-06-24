@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.35.0] - 2026-06-24 13:15
+
+### Added
+- **Presets aislados por Grafo (Repositorio)**:
+  - Los presets ahora se guardan de forma independiente para cada grafo de Roam Research en `localStorage` usando la clave dinámica `roam-export-presets-{nombreGrafo}`. Esto evita que los presets de un grafo aparezcan por error en grafos independientes.
+  - El nombre del grafo se obtiene directamente a través de `window.roamAlphaAPI` o analizando el hash de la URL (`#/app/{graphName}`).
+- **Migración automática de presets heredados**:
+  - Al iniciar, si no existen presets guardados para el grafo actual, el plugin busca presets en la clave global antigua (`roam-export-presets`) y los migra automáticamente al almacenamiento propio del grafo sin pérdida de datos.
+
+---
+
 ## [2.34.0] - 2026-06-24 13:00
 
 ### Added

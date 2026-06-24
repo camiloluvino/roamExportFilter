@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.33.0
-// Date: 2026-06-24 12:00
+// Version: 2.35.0
+// Date: 2026-06-24 13:15
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -2112,21 +2112,54 @@ const promptUnifiedExport = (pageName, pageUid) => {
       structure: 'hierarchical'
     };
 
-    // Presets storage helper
+    // Helper to get current Roam graph name
+    const getGraphName = () => {
+      try {
+        if (window.roamAlphaAPI && window.roamAlphaAPI.graph && window.roamAlphaAPI.graph.name) {
+          return window.roamAlphaAPI.graph.name;
+        }
+        const match = window.location.hash.match(/#\/app\/([^/]+)/);
+        if (match) {
+          return match[1];
+        }
+      } catch (e) {
+        console.error("Error detecting graph name", e);
+      }
+      return 'default';
+    };
+
+    // Presets storage helper (scoped by graph)
     const getSavedPresets = () => {
-      const stored = localStorage.getItem('roam-export-presets');
+      const graphName = getGraphName();
+      const graphKey = `roam-export-presets-${graphName}`;
+      const stored = localStorage.getItem(graphKey);
       if (stored) {
         try {
           return JSON.parse(stored);
         } catch (e) {
-          console.error("Error reading presets", e);
+          console.error("Error reading presets for graph " + graphName, e);
+        }
+      } else {
+        // Migration: check if old key exists
+        const legacyStored = localStorage.getItem('roam-export-presets');
+        if (legacyStored) {
+          try {
+            const parsed = JSON.parse(legacyStored);
+            // Migrate to graph-scoped storage
+            localStorage.setItem(graphKey, legacyStored);
+            return parsed;
+          } catch (e) {
+            console.error("Error migrating legacy presets", e);
+          }
         }
       }
       return [];
     };
 
     const savePresets = (presets) => {
-      localStorage.setItem('roam-export-presets', JSON.stringify(presets));
+      const graphName = getGraphName();
+      const graphKey = `roam-export-presets-${graphName}`;
+      localStorage.setItem(graphKey, JSON.stringify(presets));
     };
 
     const getMarkdownForUids = async (uids) => {

@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-24 13:00
+> **Última actualización**: 2026-06-24 13:15
 
 ---
 
 ## Versión actual
 
-**2.34.0** (2026-06-24 13:00)
+**2.35.0** (2026-06-24 13:15)
 
 ---
 
@@ -15,7 +15,7 @@
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
 | **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas (Por Ramas, Por Páginas, Presets) con buscador interactivo y administrador de tags favoritos |
-| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques cross-page localmente. Ahora con soporte para **Renombrar** y **Fusionar** bloques de forma interactiva |
+| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques localmente, aisladas por Grafo. Con soporte para **Renombrar**, **Fusionar** bloques y migración automática |
 | **Copy UIDs** | ✅ Estable | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
@@ -42,6 +42,11 @@
 ---
 
 ## Historial reciente
+
+### v2.35.0 (2026-06-24 13:15)
+- Added: **Aislamiento de Presets por Grafo**.
+  - Almacenamiento indexado por el nombre del grafo (`roam-export-presets-{graphName}`).
+  - Migración automática de presets globales anteriores al nuevo formato específico de cada grafo.
 
 ### v2.34.0 (2026-06-24 13:00)
 - Added: **Edición de Presets (Renombrar y Fusionar)**.
