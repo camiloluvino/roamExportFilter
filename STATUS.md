@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-24 13:45
+> **Última actualización**: 2026-06-24 17:35
 
 ---
 
 ## Versión actual
 
-**2.35.1** (2026-06-24 13:45)
+**2.35.2** (2026-06-24 17:35)
 
 ---
 
@@ -42,6 +42,9 @@
 ---
 
 ## Historial reciente
+
+### v2.35.2 (2026-06-24 17:35)
+- Fixed: **Fuga de listeners de teclado y bloqueo de interfaz**. Corregido un bug donde el event listener global de la tecla `Escape` no se eliminaba al cerrar el modal mediante otras acciones (como botones Cancelar, Exportar, Copiar o haciendo clic fuera del modal). Esto provocaba que pulsar `Escape` posteriormente causara excepciones no controladas e hiciera que el cursor desapareciera y la UI de Roam dejara de responder al mouse.
 
 ### v2.35.1 (2026-06-24 13:45)
 - Fixed: **Fuga de presets al migrar**. Se eliminó la persistencia de la clave global tras su primera migración para evitar que se propaguen presets antiguos a múltiples grafos de forma repetida.

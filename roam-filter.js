@@ -3576,9 +3576,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
     setupOptionSelector(epubStructureSelector, epubOptions, 'structure');
     setupOptionSelector(mdStructureSelector, mdOptions, 'structure');
 
-    const cleanup = () => {
+    function cleanup() {
       document.body.removeChild(overlay);
-    };
+      document.removeEventListener('keydown', handleKeydown);
+    }
 
     const getSelectedBranchUids = () => {
       const checked = treeContainer.querySelectorAll('.branch-checkbox:checked');
@@ -3743,13 +3744,12 @@ const promptUnifiedExport = (pageName, pageUid) => {
     });
 
     // Close on Escape
-    const handleKeydown = (e) => {
+    function handleKeydown(e) {
       if (e.key === 'Escape') {
         cleanup();
         resolve({ cancelled: true });
-        document.removeEventListener('keydown', handleKeydown);
       }
-    };
+    }
     document.addEventListener('keydown', handleKeydown);
 
     // Focus search input on open
@@ -5052,9 +5052,10 @@ const promptForBranchSelection = (pageName, structure) => {
       }
     });
 
-    const cleanup = () => {
+    function cleanup() {
       document.body.removeChild(overlay);
-    };
+      document.removeEventListener('keydown', handleEscape);
+    }
 
     const getSelectedUids = () => {
       const checked = treeContainer.querySelectorAll('.branch-checkbox:checked');
@@ -5089,13 +5090,12 @@ const promptForBranchSelection = (pageName, structure) => {
     });
 
     // Close on Escape
-    const handleEscape = (e) => {
+    function handleEscape(e) {
       if (e.key === 'Escape') {
         cleanup();
         resolve({ cancelled: true });
-        document.removeEventListener('keydown', handleEscape);
       }
-    };
+    }
     document.addEventListener('keydown', handleEscape);
   });
 };
