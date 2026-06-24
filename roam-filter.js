@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.35.0
-// Date: 2026-06-24 13:15
+// Version: 2.35.1
+// Date: 2026-06-24 13:45
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -2147,6 +2147,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
             const parsed = JSON.parse(legacyStored);
             // Migrate to graph-scoped storage
             localStorage.setItem(graphKey, legacyStored);
+            // Remove legacy storage so it doesn't leak into other graphs
+            localStorage.removeItem('roam-export-presets');
             return parsed;
           } catch (e) {
             console.error("Error migrating legacy presets", e);

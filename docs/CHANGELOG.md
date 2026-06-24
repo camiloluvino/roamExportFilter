@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.35.1] - 2026-06-24 13:45
+
+### Fixed
+- **Fuga de Presets Heredados (Leak)**:
+  - Se corrigió un error por el cual los presets heredados de la versión anterior se migraban de manera repetida a múltiples grafos si el usuario los abría. Ahora, una vez que los presets antiguos se migran exitosamente al primer grafo que se abre, se elimina la clave global antigua de `localStorage` para evitar que se propaguen a otros repositorios.
+
+---
+
 ## [2.35.0] - 2026-06-24 13:15
 
 ### Added

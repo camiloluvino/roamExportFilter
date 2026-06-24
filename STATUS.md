@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-24 13:15
+> **Última actualización**: 2026-06-24 13:45
 
 ---
 
 ## Versión actual
 
-**2.35.0** (2026-06-24 13:15)
+**2.35.1** (2026-06-24 13:45)
 
 ---
 
@@ -42,6 +42,9 @@
 ---
 
 ## Historial reciente
+
+### v2.35.1 (2026-06-24 13:45)
+- Fixed: **Fuga de presets al migrar**. Se eliminó la persistencia de la clave global tras su primera migración para evitar que se propaguen presets antiguos a múltiples grafos de forma repetida.
 
 ### v2.35.0 (2026-06-24 13:15)
 - Added: **Aislamiento de Presets por Grafo**.
