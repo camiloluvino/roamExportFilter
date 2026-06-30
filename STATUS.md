@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-24 17:35
+> **Última actualización**: 2026-06-29 21:42
 
 ---
 
 ## Versión actual
 
-**2.35.2** (2026-06-24 17:35)
+**2.36.2** (2026-06-29 21:42)
 
 ---
 
@@ -15,7 +15,7 @@
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
 | **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas (Por Ramas, Por Páginas, Presets) con buscador interactivo y administrador de tags favoritos |
-| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques localmente, aisladas por Grafo. Con soporte para **Renombrar**, **Fusionar** bloques y migración automática |
+| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques de forma sincronizada en el Grafo (página `roamExportFilter/Settings`). Soporta **Renombrar**, **Fusionar** y migración automática. |
 | **Copy UIDs** | ✅ Estable | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
@@ -42,6 +42,19 @@
 ---
 
 ## Historial reciente
+
+### v2.36.2 (2026-06-29 21:42)
+- Fixed: **Falta de foco del cursor tras cerrar modal**. Ahora se captura el elemento activo de Roam al abrir el modal y se le devuelve el foco de manera programática en la limpieza.
+- Fixed: **Doble bloque en la página de sincronización**. Se implementó caché en memoria para prevenir que la creación de bloques de presets asíncronos cree duplicados debido a retrasos de procesamiento de la base de datos de Roam.
+
+### v2.36.1 (2026-06-29 15:02)
+- Fixed: **Rotura de bloque de código de Roam (Escape de backticks)**. Corregido el problema crítico por el cual la presencia de cadenas literales de triple backtick (```) dentro de la extensión rompía el renderizado y la estructura del bloque de código nativo de Roam donde se carga el plugin. Ahora se generan dinámicamente utilizando `String.fromCharCode(96, 96, 96)`.
+
+### v2.36.0 (2026-06-29 00:10)
+- Added: **Sincronización en el Grafo (Presets y Tags Favoritos)**.
+  - Almacenamiento directo en el grafo a través de la página `roamExportFilter/Settings`.
+  - Migración automática de presets y tags locales existentes desde `localStorage` al abrir el modal por primera vez en esta versión.
+  - Caché en memoria para evitar latencias de UI.
 
 ### v2.35.2 (2026-06-24 17:35)
 - Fixed: **Fuga de listeners de teclado y bloqueo de interfaz**. Corregido un bug donde el event listener global de la tecla `Escape` no se eliminaba al cerrar el modal mediante otras acciones (como botones Cancelar, Exportar, Copiar o haciendo clic fuera del modal). Esto provocaba que pulsar `Escape` posteriormente causara excepciones no controladas e hiciera que el cursor desapareciera y la UI de Roam dejara de responder al mouse.

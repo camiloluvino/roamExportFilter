@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.35.1
-// Date: 2026-06-24 13:45
+// Version: 2.36.2
+// Date: 2026-06-29 21:42
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1508,23 +1508,194 @@ const showNotification = (message, backgroundColor) => {
 // Unified export modal with tabs for "Por Filtros" and "Por Ramas"
 const promptUnifiedExport = (pageName, pageUid) => {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
     let currentDepth = 2; // Default depth
+
+    // Cache for settings to avoid async lag during single session
+    let cachedFavoriteTags = null;
+    let cachedPresets = null;
+
+    // Helpers for Roam Graph Settings page syncing
+    const SETTINGS_PAGE_TITLE = "roamExportFilter/Settings";
+    const tripleTicks = String.fromCharCode(96, 96, 96);
+
+    const generateUID = () => {
+      if (window.roamAlphaAPI && window.roamAlphaAPI.util && typeof window.roamAlphaAPI.util.generateUID === 'function') {
+        return window.roamAlphaAPI.util.generateUID();
+      }
+      return Math.random().toString(36).substring(2, 11);
+    };
+
+    // Find or create the settings page
+    const getSettingsPageUid = () => {
+      try {
+        if (!window.roamAlphaAPI || !window.roamAlphaAPI.data || typeof window.roamAlphaAPI.data.q !== 'function') {
+          return null;
+        }
+        const result = window.roamAlphaAPI.data.q(`
+          [:find ?uid
+           :where [?e :node/title "${SETTINGS_PAGE_TITLE}"] [?e :block/uid ?uid]]
+        `);
+        if (result && result.length > 0) {
+          return result[0][0];
+        }
+        // Create page if it doesn't exist
+        const pageUid = generateUID();
+        window.roamAlphaAPI.createPage({
+          page: {
+            title: SETTINGS_PAGE_TITLE,
+            uid: pageUid
+          }
+        });
+        return pageUid;
+      } catch (e) {
+        console.error("Error getting or creating settings page", e);
+        return null;
+      }
+    };
+
+    // Cache for newly created blocks to prevent race conditions during rapid read/write
+    let pendingSettingsBlocks = {};
+
+    // Find or create a specific settings block under the settings page
+    const getSettingsBlockUid = (pageUid, settingName, defaultValueString) => {
+      try {
+        if (!pageUid) return null;
+        const result = window.roamAlphaAPI.data.q(`
+          [:find ?uid ?str
+           :where
+             [?p :block/uid "${pageUid}"]
+             [?p :block/children ?c]
+             [?c :block/string ?str]
+             [?c :block/uid ?uid]]
+        `);
+        
+        const prefix = `**${settingName}:**`;
+        if (result && result.length > 0) {
+          // Note: using reverse() to get the most recently edited block if duplicates exist
+          const found = result.reverse().find(row => row[1] && row[1].startsWith(prefix));
+          if (found) {
+            delete pendingSettingsBlocks[settingName]; // Found in DB, can remove from pending
+            return found[0];
+          }
+        }
+        
+        // If not in DB yet, check if we just created it in this session
+        if (pendingSettingsBlocks[settingName]) {
+          return pendingSettingsBlocks[settingName];
+        }
+        
+        // Create block if it doesn't exist
+        const blockUid = generateUID();
+        pendingSettingsBlocks[settingName] = blockUid;
+        window.roamAlphaAPI.createBlock({
+          location: {
+            "parent-uid": pageUid,
+            order: "last"
+          },
+          block: {
+            string: prefix + " " + tripleTicks + "json\n" + defaultValueString + "\n" + tripleTicks,
+            uid: blockUid
+          }
+        });
+        return blockUid;
+      } catch (e) {
+        console.error(`Error getting or creating settings block for ${settingName}`, e);
+        return null;
+      }
+    };
+
+    // Read a JSON setting block from the graph
+    const readGraphSetting = (settingName, defaultValue) => {
+      try {
+        const pageUid = getSettingsPageUid();
+        if (!pageUid) return null;
+        
+        const defaultValueString = JSON.stringify(defaultValue, null, 2);
+        const blockUid = getSettingsBlockUid(pageUid, settingName, defaultValueString);
+        if (!blockUid) return null;
+        
+        // Pull the block's current string
+        const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', blockUid]);
+        if (blockData && blockData[':block/string']) {
+          const blockString = blockData[':block/string'];
+          const regex = new RegExp(tripleTicks + "json\\n([\\s\\S]*?)\\n" + tripleTicks);
+          const jsonMatch = blockString.match(regex);
+          if (jsonMatch && jsonMatch[1]) {
+            try {
+              return JSON.parse(jsonMatch[1]);
+            } catch (e) {
+              console.error(`Error parsing JSON for setting ${settingName}`, e);
+            }
+          }
+        }
+      } catch (e) {
+        console.error(`Error reading graph setting ${settingName}`, e);
+      }
+      return null;
+    };
+
+    // Write a JSON setting block to the graph
+    const writeGraphSetting = (settingName, data, defaultValue) => {
+      try {
+        const pageUid = getSettingsPageUid();
+        if (!pageUid) return false;
+        
+        const defaultValueString = JSON.stringify(defaultValue, null, 2);
+        const blockUid = getSettingsBlockUid(pageUid, settingName, defaultValueString);
+        if (!blockUid) return false;
+        
+        const newString = "**" + settingName + ":** " + tripleTicks + "json\n" + JSON.stringify(data, null, 2) + "\n" + tripleTicks;
+        window.roamAlphaAPI.updateBlock({
+          block: {
+            uid: blockUid,
+            string: newString
+          }
+        });
+        return true;
+      } catch (e) {
+        console.error(`Error writing graph setting ${settingName}`, e);
+        return false;
+      }
+    };
 
     // Favorite Tags persistent storage helper
     const getFavoriteTags = () => {
+      if (cachedFavoriteTags) return cachedFavoriteTags;
+
+      const defaultTags = ['textoÍntegro', 'Gemini/Pro/3.0/resumen', 'Gemini/Pro/3.0/respuestas', 'Claude/Sonnet/4.5/resumen', 'Claude/Sonnet/4.5/respuestas', 'Claude/Opus/4.5/respuestas'];
+      
+      // Try to read from Roam graph
+      const graphTags = readGraphSetting('favoriteTags', defaultTags);
+      if (graphTags) {
+        cachedFavoriteTags = graphTags;
+        return graphTags;
+      }
+
+      // Fallback/Migration: check if local storage has them
       const stored = localStorage.getItem('roam-export-favorite-tags');
       if (stored) {
         try {
-          return JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          cachedFavoriteTags = parsed;
+          // Save to graph for future sync
+          writeGraphSetting('favoriteTags', parsed, defaultTags);
+          // Remove local so we know we migrated
+          localStorage.removeItem('roam-export-favorite-tags');
+          return parsed;
         } catch (e) {
           // fallback
         }
       }
-      return ['textoÍntegro', 'Gemini/Pro/3.0/resumen', 'Gemini/Pro/3.0/respuestas', 'Claude/Sonnet/4.5/resumen', 'Claude/Sonnet/4.5/respuestas', 'Claude/Opus/4.5/respuestas'];
+
+      cachedFavoriteTags = defaultTags;
+      return defaultTags;
     };
 
     const saveFavoriteTags = (tags) => {
-      localStorage.setItem('roam-export-favorite-tags', JSON.stringify(tags));
+      cachedFavoriteTags = tags;
+      const defaultTags = ['textoÍntegro', 'Gemini/Pro/3.0/resumen', 'Gemini/Pro/3.0/respuestas', 'Claude/Sonnet/4.5/resumen', 'Claude/Sonnet/4.5/respuestas', 'Claude/Opus/4.5/respuestas'];
+      writeGraphSetting('favoriteTags', tags, defaultTags);
     };
 
     // Create modal overlay
@@ -2128,25 +2299,42 @@ const promptUnifiedExport = (pageName, pageUid) => {
       return 'default';
     };
 
-    // Presets storage helper (scoped by graph)
+    // Presets storage helper (scoped by graph - now synced in graph!)
     const getSavedPresets = () => {
+      if (cachedPresets) return cachedPresets;
+
+      // Try to read from Roam graph
+      const graphPresets = readGraphSetting('presets', []);
+      if (graphPresets) {
+        cachedPresets = graphPresets;
+        return graphPresets;
+      }
+
+      // Fallback/Migration: check if graph-scoped localStorage has them
       const graphName = getGraphName();
       const graphKey = `roam-export-presets-${graphName}`;
       const stored = localStorage.getItem(graphKey);
       if (stored) {
         try {
-          return JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          cachedPresets = parsed;
+          // Save to graph for future sync
+          writeGraphSetting('presets', parsed, []);
+          // Remove local so we know we migrated
+          localStorage.removeItem(graphKey);
+          return parsed;
         } catch (e) {
-          console.error("Error reading presets for graph " + graphName, e);
+          console.error("Error migrating graph-scoped presets from localStorage", e);
         }
       } else {
-        // Migration: check if old key exists
+        // Migration: check if old key exists in localStorage
         const legacyStored = localStorage.getItem('roam-export-presets');
         if (legacyStored) {
           try {
             const parsed = JSON.parse(legacyStored);
-            // Migrate to graph-scoped storage
-            localStorage.setItem(graphKey, legacyStored);
+            cachedPresets = parsed;
+            // Save to graph for future sync
+            writeGraphSetting('presets', parsed, []);
             // Remove legacy storage so it doesn't leak into other graphs
             localStorage.removeItem('roam-export-presets');
             return parsed;
@@ -2155,13 +2343,14 @@ const promptUnifiedExport = (pageName, pageUid) => {
           }
         }
       }
+
+      cachedPresets = [];
       return [];
     };
 
     const savePresets = (presets) => {
-      const graphName = getGraphName();
-      const graphKey = `roam-export-presets-${graphName}`;
-      localStorage.setItem(graphKey, JSON.stringify(presets));
+      cachedPresets = presets;
+      writeGraphSetting('presets', presets, []);
     };
 
     const getMarkdownForUids = async (uids) => {
@@ -3579,6 +3768,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
     function cleanup() {
       document.body.removeChild(overlay);
       document.removeEventListener('keydown', handleKeydown);
+      document.activeElement?.blur();
+      if (previousFocus && typeof previousFocus.focus === 'function') {
+        setTimeout(() => previousFocus.focus(), 10);
+      }
     }
 
     const getSelectedBranchUids = () => {
@@ -4218,6 +4411,7 @@ const unifiedExport = async () => {
 
 const promptForTag = () => {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.style.cssText = `
@@ -4276,6 +4470,10 @@ const promptForTag = () => {
 
     const cleanup = () => {
       document.body.removeChild(overlay);
+      document.activeElement?.blur();
+      if (previousFocus && typeof previousFocus.focus === 'function') {
+        setTimeout(() => previousFocus.focus(), 10);
+      }
     };
 
     const submit = () => {
@@ -4446,6 +4644,7 @@ const copyFilteredContent = async () => {
 // Prompt for root export options (with toggle, preview, and favorite tags)
 const promptForRootExport = (pageName, rootCount, rootBlocks, pageUid) => {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.style.cssText = `
@@ -4576,6 +4775,10 @@ const promptForRootExport = (pageName, rootCount, rootBlocks, pageUid) => {
     const cleanup = () => {
       clearTimeout(debounceTimer);
       document.body.removeChild(overlay);
+      document.activeElement?.blur();
+      if (previousFocus && typeof previousFocus.focus === 'function') {
+        setTimeout(() => previousFocus.focus(), 10);
+      }
     };
 
     const submit = () => {
@@ -4887,6 +5090,7 @@ const fetchBlocksForExport = (selectedUids, filterTag = null) => {
 // Prompt for branch selection with visual tree
 const promptForBranchSelection = (pageName, structure) => {
   return new Promise((resolve) => {
+    const previousFocus = document.activeElement;
     // Create modal overlay
     const overlay = document.createElement('div');
     overlay.style.cssText = `
@@ -5055,6 +5259,10 @@ const promptForBranchSelection = (pageName, structure) => {
     function cleanup() {
       document.body.removeChild(overlay);
       document.removeEventListener('keydown', handleEscape);
+      document.activeElement?.blur();
+      if (previousFocus && typeof previousFocus.focus === 'function') {
+        setTimeout(() => previousFocus.focus(), 10);
+      }
     }
 
     const getSelectedUids = () => {

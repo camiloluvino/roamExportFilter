@@ -1,5 +1,36 @@
 # Changelog
 
+## [2.36.2] - 2026-06-29 21:42
+
+### Fixed
+- **Falta de foco del cursor tras cerrar modal (Restauración de Focus)**:
+  - Se solucionó el problema por el cual el cursor de texto de Roam desaparecía tras cerrar la ventana del plugin, obligando a desenfocar la pestaña para recuperarlo.
+  - El plugin ahora captura el elemento activo (`document.activeElement`) justo antes de mostrar el modal y le devuelve el foco de manera programática e inmediata en la limpieza (`cleanup`).
+- **Bloques de configuración duplicados en Graph Sync (Deduplicación/Race Condition)**:
+  - Se implementó un almacenamiento en caché en memoria (`pendingSettingsBlocks`) para los UIDs de bloques recién creados. Esto previene que se creen bloques de presets vacíos duplicados cuando el plugin escribe datos inmediatamente después de inicializar la página de configuración en segundo plano.
+
+---
+
+## [2.36.1] - 2026-06-29 15:02
+
+### Fixed
+- **Rotura de bloque de código de Roam (Escape de backticks)**:
+  - Se corrigió el problema crítico por el cual la presencia de cadenas literales de triple backtick (```) dentro de la extensión rompía el renderizado y la estructura del bloque de código nativo de Roam donde se carga el plugin.
+  - Ahora los delimitadores de código de Markdown se generan dinámicamente utilizando `String.fromCharCode(96, 96, 96)`, eliminando por completo las secuencias literales de triple backtick del código fuente.
+
+---
+
+## [2.36.0] - 2026-06-29 00:10
+
+### Added
+- **Sincronización en la Nube mediante el Grafo de Roam**:
+  - Los presets y los tags favoritos ahora se almacenan directamente en la base de datos de tu grafo de Roam Research en una página llamada `roamExportFilter/Settings` en lugar de guardarse de manera local en el `localStorage` del navegador.
+  - Esto habilita la sincronización instantánea y nativa de todas tus selecciones de presets y etiquetas favoritas en múltiples computadoras o dispositivos vinculados al mismo grafo.
+  - Implementación de un sistema de caché de sesión para evitar cualquier tipo de lag asíncrono en la interfaz del usuario al cargar y guardar configuraciones.
+  - Soporte de migración automatizada sin pérdida de datos: el plugin detectará automáticamente si tienes presets o tags favoritos en tu `localStorage` local (incluso de versiones heredadas o aisladas por grafo) y los migrará a tu base de datos de Roam en la primera ejecución, limpiando la clave de almacenamiento local posterior para evitar duplicación.
+
+---
+
 ## [2.35.1] - 2026-06-24 13:45
 
 ### Fixed
