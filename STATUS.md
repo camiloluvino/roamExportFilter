@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-07-02 01:47
+> **Última actualización**: 2026-07-02 02:15
 
 ---
 
 ## Versión actual
 
-**2.37.1** (2026-07-02 01:47)
+**2.38.0** (2026-07-02 02:15)
 
 ---
 
@@ -42,6 +42,11 @@
 ---
 
 ## Historial reciente
+
+### v2.38.0 (2026-07-02 02:15)
+- Redesigned: **Rediseño completo de la pestaña de Presets**. Se movieron los 5 botones redundantes y repetidos por fila (`Copiar Texto`, `Copiar UIDs`, `Cargar`, `Renombrar` y `Fusionar`) a una única barra de herramientas (toolbar) estática superior, deshabilitada por defecto.
+- Added: **Modo de selección de presets**. Los presets individuales se convirtieron en filas de lista compactas y densas. Un clic selecciona un preset, lo resalta visualmente en azul y habilita la toolbar para operar sobre él.
+- Improved: **Validación adaptativa y rendimiento**. La toolbar valida de forma reactiva si el preset pertenece a la página actual para habilitar/deshabilitar la fusión, y los event listeners se inicializan de forma estática una sola vez al cargar la extensión.
 
 ### v2.37.1 (2026-07-02 01:47)
 - Fixed: **Falta de foco del cursor al cerrar modales**. Se reemplazó el patrón destructivo `blur() -> setTimeout(focus, 10)` en las 4 funciones de cleanup con una función helper robusta `restoreRoamFocus` que verifica si el elemento anterior sigue en el DOM de la página activa, y de no ser así, busca el editor de texto activo de Roam (`textarea.rm-block-input`) para devolverle el foco.

@@ -2046,6 +2046,108 @@ const promptUnifiedExport = (pageName, pageUid) => {
                 Selecciones de bloques preguardadas (presets) para reutilizar en cualquier momento:
               </p>
             </div>
+            <!-- Presets Toolbar -->
+            <div id="presets-toolbar" style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              padding: 10px 12px;
+              background: #f0f4f8;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              margin-bottom: 12px;
+              flex-wrap: wrap;
+              flex-shrink: 0;
+            ">
+              <button id="toolbar-copy-text" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: white;
+                color: #137CBD;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                opacity: 0.5;
+                pointer-events: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='white'">
+                📋 Copiar Texto
+              </button>
+              <button id="toolbar-copy-uids" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #8A3707;
+                border-radius: 4px;
+                background: white;
+                color: #8A3707;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                opacity: 0.5;
+                pointer-events: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#fffaf0'" onmouseout="this.style.background='white'">
+                🔗 Copiar UIDs
+              </button>
+              <button id="toolbar-load" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #28a745;
+                border-radius: 4px;
+                background: white;
+                color: #28a745;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                opacity: 0.5;
+                pointer-events: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#f6fff9'" onmouseout="this.style.background='white'">
+                📂 Cargar
+              </button>
+              <button id="toolbar-rename" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #5c7080;
+                border-radius: 4px;
+                background: white;
+                color: #5c7080;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                opacity: 0.5;
+                pointer-events: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#f5f8fa'" onmouseout="this.style.background='white'">
+                ✏️ Renombrar
+              </button>
+              <button id="toolbar-merge" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #722ed1;
+                border-radius: 4px;
+                background: white;
+                color: #722ed1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                opacity: 0.5;
+                pointer-events: none;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#f9f0ff'" onmouseout="this.style.background='white'">
+                🔄 Fusionar
+              </button>
+              <span id="presets-selection-info" style="font-size: 12px; color: #8a9ba8; margin-left: 8px; font-style: italic;">
+                Selecciona un preset de la lista
+              </span>
+            </div>
             <div id="presets-list-container" style="
               border: 1px solid #e0e0e0;
               border-radius: 4px;
@@ -2563,6 +2665,9 @@ const promptUnifiedExport = (pageName, pageUid) => {
           savePresets(presets);
           showNotification(`✓ Preset renombrado a "${newName}"`, '#28a745');
           renderPresetsList();
+          if (selectedPresetId === preset.id) {
+            selectPreset(preset.id);
+          }
         }
         close();
       };
@@ -2571,6 +2676,103 @@ const promptUnifiedExport = (pageName, pageUid) => {
       nameInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') doRename();
         if (e.key === 'Escape') close();
+      });
+    };
+
+    // Selection state for presets
+    let selectedPresetId = null;
+
+    const selectPreset = (id) => {
+      selectedPresetId = id;
+      const presets = getSavedPresets();
+      const preset = presets.find(p => p.id === id);
+      if (!preset) return;
+
+      const infoSpan = document.getElementById('presets-selection-info');
+      if (infoSpan) {
+        infoSpan.textContent = `Seleccionado: ${preset.name}`;
+        infoSpan.style.color = '#137cbd';
+        infoSpan.style.fontWeight = '600';
+      }
+
+      const container = document.getElementById('presets-list-container');
+      if (container) {
+        container.querySelectorAll('.preset-item').forEach(item => {
+          if (item.dataset.id === id) {
+            item.style.borderColor = '#137CBD';
+            item.style.background = '#f0f7ff';
+          } else {
+            item.style.borderColor = '#e2e8f0';
+            item.style.background = 'white';
+          }
+        });
+      }
+
+      ['toolbar-copy-text', 'toolbar-copy-uids', 'toolbar-load', 'toolbar-rename', 'toolbar-merge'].forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          if (btnId === 'toolbar-merge') {
+            const isSamePage = preset.pageUid === pageUid;
+            if (isSamePage) {
+              btn.style.opacity = '1';
+              btn.style.pointerEvents = 'auto';
+              btn.style.cursor = 'pointer';
+              btn.style.background = 'white';
+              btn.style.color = '#722ed1';
+              btn.style.borderColor = '#722ed1';
+              btn.removeAttribute('disabled');
+              btn.removeAttribute('title');
+            } else {
+              btn.style.opacity = '0.5';
+              btn.style.pointerEvents = 'none';
+              btn.style.cursor = 'not-allowed';
+              btn.style.background = '#f5f5f5';
+              btn.style.color = '#bfbfbf';
+              btn.style.borderColor = '#d9d9d9';
+              btn.setAttribute('disabled', 'true');
+              btn.setAttribute('title', `Solo se puede fusionar desde la página de origen del preset (${preset.pageTitle})`);
+            }
+          } else {
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+            btn.style.cursor = 'pointer';
+          }
+        }
+      });
+    };
+
+    const deselectPreset = () => {
+      selectedPresetId = null;
+
+      const infoSpan = document.getElementById('presets-selection-info');
+      if (infoSpan) {
+        infoSpan.textContent = 'Selecciona un preset de la lista';
+        infoSpan.style.color = '#8a9ba8';
+        infoSpan.style.fontWeight = 'normal';
+      }
+
+      const container = document.getElementById('presets-list-container');
+      if (container) {
+        container.querySelectorAll('.preset-item').forEach(item => {
+          item.style.borderColor = '#e2e8f0';
+          item.style.background = 'white';
+        });
+      }
+
+      ['toolbar-copy-text', 'toolbar-copy-uids', 'toolbar-load', 'toolbar-rename', 'toolbar-merge'].forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+          btn.style.opacity = '0.5';
+          btn.style.pointerEvents = 'none';
+          btn.style.cursor = 'default';
+          if (btnId === 'toolbar-merge') {
+            btn.style.background = 'white';
+            btn.style.color = '#722ed1';
+            btn.style.borderColor = '#722ed1';
+            btn.removeAttribute('disabled');
+            btn.removeAttribute('title');
+          }
+        }
       });
     };
 
@@ -2586,6 +2788,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
             Ve a la pestaña <b>🌳 Por Ramas</b>, selecciona bloques y haz clic en <b>💾 Guardar Preset</b>.
           </div>
         `;
+        deselectPreset();
         return;
       }
 
@@ -2593,53 +2796,34 @@ const promptUnifiedExport = (pageName, pageUid) => {
         const dateStr = new Date(preset.createdAt).toLocaleDateString(undefined, {
           day: 'numeric', month: 'short', year: 'numeric'
         });
-        const isSamePage = preset.pageUid === pageUid;
-        const mergeBtnHtml = isSamePage 
-          ? `
-              <button class="preset-merge" data-id="${preset.id}" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #722ed1;
-                border-radius: 4px;
-                background: white;
-                color: #722ed1;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              " onmouseover="this.style.background='#f9f0ff'" onmouseout="this.style.background='white'">
-                🔄 Fusionar
-              </button>
-            `
-          : `
-              <button class="preset-merge" data-id="${preset.id}" disabled style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #d9d9d9;
-                border-radius: 4px;
-                background: #f5f5f5;
-                color: #bfbfbf;
-                cursor: not-allowed;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              " title="Solo se puede fusionar desde la página de origen del preset (${preset.pageTitle})">
-                🔄 Fusionar
-              </button>
-            `;
-
+        const isSelected = preset.id === selectedPresetId;
         return `
           <div class="preset-item" data-id="${preset.id}" draggable="true" style="
-            border: 1px solid #e2e8f0;
+            border: 1px solid ${isSelected ? '#137CBD' : '#e2e8f0'};
             border-radius: 6px;
-            padding: 14px;
-            background: white;
+            padding: 10px 14px;
+            background: ${isSelected ? '#f0f7ff' : 'white'};
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            transition: all 0.2s;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.15s;
             position: relative;
-          " onmouseover="this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)';" onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';">
+            user-select: none;
+          " onmouseover="if('${preset.id}'!=='${selectedPresetId}') { this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)'; }" onmouseout="if('${preset.id}'!=='${selectedPresetId}') { this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }">
+            <div class="preset-drag-handle" style="
+              cursor: grab;
+              padding: 2px 6px;
+              color: #a0aec0;
+              font-size: 16px;
+              user-select: none;
+            " onmouseover="this.style.color='#718096';" onmouseout="this.style.color='#a0aec0';" title="Arrastra para reordenar">⠿</div>
+            <div style="flex: 1; min-width: 0;">
+              <div style="font-weight: 600; font-size: 14px; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 24px;">📌 ${preset.name}</div>
+              <div style="font-size: 12px; color: #718096; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 24px;">
+                ${preset.description} &middot; Origen: <b>${preset.pageTitle}</b> &middot; ${dateStr}
+              </div>
+            </div>
             <button class="delete-preset-btn" data-id="${preset.id}" style="
               position: absolute;
               top: 10px;
@@ -2653,88 +2837,22 @@ const promptUnifiedExport = (pageName, pageUid) => {
               line-height: 1;
               border-radius: 4px;
             " onmouseover="this.style.color='#e53e3e'; this.style.background='#fff5f5';" onmouseout="this.style.color='#a0aec0'; this.style.background='none';">✕</button>
-            
-            <div style="display: flex; align-items: flex-start; gap: 8px;">
-              <div class="preset-drag-handle" style="
-                cursor: grab;
-                padding: 2px 6px;
-                color: #a0aec0;
-                font-size: 16px;
-                user-select: none;
-                margin-top: -2px;
-              " onmouseover="this.style.color='#718096';" onmouseout="this.style.color='#a0aec0';" title="Arrastra para reordenar">⠿</div>
-              <div style="flex: 1; min-width: 0;">
-                <div style="font-weight: 600; font-size: 14px; color: #2d3748; padding-right: 24px;">📌 ${preset.name}</div>
-                <div style="font-size: 12px; color: #718096; margin-top: 4px;">
-                  ${preset.description} &middot; Origen: <b>${preset.pageTitle}</b> &middot; ${dateStr}
-                </div>
-              </div>
-            </div>
-            
-            <div style="display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap;">
-              <button class="preset-copy-text" data-id="${preset.id}" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #137CBD;
-                border-radius: 4px;
-                background: white;
-                color: #137CBD;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='white'">
-                📋 Copiar Texto
-              </button>
-              <button class="preset-copy-uids" data-id="${preset.id}" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #8A3707;
-                border-radius: 4px;
-                background: white;
-                color: #8A3707;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              " onmouseover="this.style.background='#fffaf0'" onmouseout="this.style.background='white'">
-                🔗 Copiar UIDs
-              </button>
-              <button class="preset-load" data-id="${preset.id}" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #28a745;
-                border-radius: 4px;
-                background: white;
-                color: #28a745;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              " onmouseover="this.style.background='#f6fff9'" onmouseout="this.style.background='white'">
-                📂 Cargar
-              </button>
-              <button class="preset-rename" data-id="${preset.id}" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #5c7080;
-                border-radius: 4px;
-                background: white;
-                color: #5c7080;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-              " onmouseover="this.style.background='#f5f8fa'" onmouseout="this.style.background='white'">
-                ✏️ Renombrar
-              </button>
-              ${mergeBtnHtml}
-            </div>
           </div>
         `;
       }).join('');
 
-      // Add event listeners for preset actions
+      // Add event listeners for preset list items
+      container.querySelectorAll('.preset-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+          const id = item.dataset.id;
+          if (selectedPresetId === id) {
+            deselectPreset();
+          } else {
+            selectPreset(id);
+          }
+        });
+      });
+
       container.querySelectorAll('.delete-preset-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
@@ -2743,187 +2861,11 @@ const promptUnifiedExport = (pageName, pageUid) => {
           if (confirm(`¿Estás seguro de que quieres eliminar el preset "${name}"?`)) {
             const updated = getSavedPresets().filter(p => p.id !== id);
             savePresets(updated);
+            if (selectedPresetId === id) {
+              deselectPreset();
+            }
             renderPresetsList();
             showNotification('Preset eliminado', '#718096');
-          }
-        });
-      });
-
-      container.querySelectorAll('.preset-copy-uids').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const preset = presets.find(p => p.id === id);
-          if (!preset) return;
-          const uidText = preset.blockUids.map(uid => `((${uid}))`).join('\n');
-          if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(uidText)
-              .then(() => showNotification(`✓ ${preset.blockUids.length} UIDs copiados`, '#28a745'))
-              .catch(() => showNotification('✗ Error al copiar UIDs', '#DC143C'));
-          }
-        });
-      });
-
-      container.querySelectorAll('.preset-copy-text').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.id;
-          const preset = presets.find(p => p.id === id);
-          if (!preset) return;
-
-          showNotification('Procesando bloques...', '#137CBD');
-          
-          try {
-            const markdown = await getMarkdownForUids(preset.blockUids);
-            if (!markdown) {
-              showNotification('⚠️ Bloques vacíos o ya no existen', '#e0a800');
-              return;
-            }
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-              navigator.clipboard.writeText(markdown)
-                .then(() => showNotification(`✓ Texto copiado (${preset.blockUids.length} bloques)`, '#28a745'))
-                .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
-            }
-          } catch (e) {
-            console.error(e);
-            showNotification('✗ Error al procesar bloques', '#DC143C');
-          }
-        });
-      });
-
-      container.querySelectorAll('.preset-load').forEach(btn => {
-        btn.addEventListener('click', async () => {
-          const id = btn.dataset.id;
-          const preset = presets.find(p => p.id === id);
-          if (!preset) return;
-
-          if (preset.pageUid === pageUid) {
-            switchTab('branches');
-            treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
-              cb.checked = false;
-              cb.indeterminate = false;
-            });
-
-            let markedCount = 0;
-            preset.blockUids.forEach(uid => {
-              const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
-              if (cb) {
-                cb.checked = true;
-                markedCount++;
-                
-                const container = cb.closest('.tree-node');
-                if (container) {
-                  const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
-                  descendantCheckboxes.forEach(childCb => {
-                    childCb.checked = true;
-                    childCb.indeterminate = false;
-                  });
-
-                  let parentContainer = container.parentElement.closest('.tree-node');
-                  while (parentContainer) {
-                    const parentCb = parentContainer.querySelector('.branch-checkbox');
-                    if (parentCb) {
-                      const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
-                      if (allDescendants.length > 0) {
-                        const allChecked = allDescendants.every(c => c.checked);
-                        const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
-                        if (allChecked) {
-                          parentCb.checked = true;
-                          parentCb.indeterminate = false;
-                        } else if (someChecked) {
-                          parentCb.checked = false;
-                          parentCb.indeterminate = true;
-                        } else {
-                          parentCb.checked = false;
-                          parentCb.indeterminate = false;
-                        }
-                      }
-                    }
-                    parentContainer = parentContainer.parentElement.closest('.tree-node');
-                  }
-                }
-              }
-            });
-
-            updateBranchCount();
-            updateSelectAllLabel();
-            showNotification(`✓ Cargados ${markedCount} de ${preset.blockUids.length} bloques`, '#28a745');
-          } else {
-            if (confirm(`Este preset es de la página "${preset.pageTitle}". ¿Quieres navegar a esa página para cargarlo?`)) {
-              cleanup();
-              if (window.roamAlphaAPI && window.roamAlphaAPI.ui && window.roamAlphaAPI.ui.mainWindow) {
-                window.roamAlphaAPI.ui.mainWindow.openPage({ page: { uid: preset.pageUid } });
-                
-                sessionStorage.setItem('roam-export-auto-load-preset', JSON.stringify({
-                  presetId: preset.id,
-                  pageUid: preset.pageUid
-                }));
-
-                setTimeout(() => {
-                  unifiedExport();
-                }, 1000);
-              } else {
-                showNotification('No se pudo navegar automáticamente', '#DC143C');
-              }
-            }
-          }
-        });
-      });
-
-      container.querySelectorAll('.preset-rename').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const preset = presets.find(p => p.id === id);
-          if (preset) {
-            showPresetRenameDialog(preset);
-          }
-        });
-      });
-
-      container.querySelectorAll('.preset-merge').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const id = btn.dataset.id;
-          const preset = presets.find(p => p.id === id);
-          if (!preset) return;
-
-          const selectedUids = getSelectedBranchUids();
-          if (selectedUids.length === 0) {
-            alert('Por favor selecciona al menos un bloque en el árbol para fusionar con este preset.');
-            return;
-          }
-
-          const currentUidsSet = new Set(preset.blockUids);
-          const newUids = selectedUids.filter(uid => !currentUidsSet.has(uid));
-
-          if (newUids.length === 0) {
-            showNotification('Todos los bloques seleccionados ya están en este preset', '#e0a800');
-            return;
-          }
-
-          if (confirm(`¿Estás seguro de que quieres añadir ${newUids.length} bloques nuevos al preset "${preset.name}"?`)) {
-            const mergedUids = [...preset.blockUids, ...newUids];
-            
-            let preview = '';
-            try {
-              const firstUid = mergedUids[0];
-              const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', firstUid]);
-              if (blockData && blockData[':block/string']) {
-                const cleanStr = blockData[':block/string'].trim().replace(/[\[\]]/g, '');
-                preview = cleanStr.substring(0, 45) + (cleanStr.length > 45 ? '...' : '');
-              }
-            } catch (e) {
-              console.error("Error pulling block preview", e);
-            }
-
-            const updatedPresets = getSavedPresets();
-            const idx = updatedPresets.findIndex(p => p.id === preset.id);
-            if (idx !== -1) {
-              updatedPresets[idx].blockUids = mergedUids;
-              updatedPresets[idx].blockCount = mergedUids.length;
-              updatedPresets[idx].description = `${mergedUids.length} bloques` + (preview ? ` ("${preview}")` : '');
-              updatedPresets[idx].createdAt = new Date().toISOString();
-              savePresets(updatedPresets);
-              showNotification(`✓ Se añadieron ${newUids.length} bloques al preset "${preset.name}"`, '#28a745');
-              renderPresetsList();
-            }
           }
         });
       });
@@ -2999,6 +2941,9 @@ const promptUnifiedExport = (pageName, pageUid) => {
           currentPresets.splice(toIndex, 0, draggedPreset);
           savePresets(currentPresets);
           renderPresetsList();
+          if (selectedPresetId) {
+            selectPreset(selectedPresetId);
+          }
           showNotification('Orden de presets actualizado', '#137cbd');
         });
       });
@@ -3051,6 +2996,201 @@ const promptUnifiedExport = (pageName, pageUid) => {
     tabBranches.addEventListener('click', () => switchTab('branches'));
     tabPages.addEventListener('click', () => switchTab('pages'));
     tabPresets.addEventListener('click', () => switchTab('presets'));
+
+    // Toolbar action: Copiar Texto
+    const tbCopyText = document.getElementById('toolbar-copy-text');
+    if (tbCopyText) {
+      tbCopyText.addEventListener('click', async () => {
+        if (!selectedPresetId) return;
+        const presets = getSavedPresets();
+        const preset = presets.find(p => p.id === selectedPresetId);
+        if (!preset) return;
+
+        showNotification('Procesando bloques...', '#137CBD');
+        try {
+          const markdown = await getMarkdownForUids(preset.blockUids);
+          if (!markdown) {
+            showNotification('⚠️ Bloques vacíos o ya no existen', '#e0a800');
+            return;
+          }
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(markdown)
+              .then(() => showNotification(`✓ Texto copiado (${preset.blockUids.length} bloques)`, '#28a745'))
+              .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
+          }
+        } catch (e) {
+          console.error(e);
+          showNotification('✗ Error al procesar bloques', '#DC143C');
+        }
+      });
+    }
+
+    // Toolbar action: Copiar UIDs
+    const tbCopyUids = document.getElementById('toolbar-copy-uids');
+    if (tbCopyUids) {
+      tbCopyUids.addEventListener('click', () => {
+        if (!selectedPresetId) return;
+        const presets = getSavedPresets();
+        const preset = presets.find(p => p.id === selectedPresetId);
+        if (!preset) return;
+        
+        const uidText = preset.blockUids.map(uid => `((${uid}))`).join('\n');
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(uidText)
+            .then(() => showNotification(`✓ ${preset.blockUids.length} UIDs copiados`, '#28a745'))
+            .catch(() => showNotification('✗ Error al copiar UIDs', '#DC143C'));
+        }
+      });
+    }
+
+    // Toolbar action: Cargar
+    const tbLoad = document.getElementById('toolbar-load');
+    if (tbLoad) {
+      tbLoad.addEventListener('click', async () => {
+        if (!selectedPresetId) return;
+        const presets = getSavedPresets();
+        const preset = presets.find(p => p.id === selectedPresetId);
+        if (!preset) return;
+
+        if (preset.pageUid === pageUid) {
+          switchTab('branches');
+          treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
+            cb.checked = false;
+            cb.indeterminate = false;
+          });
+
+          let markedCount = 0;
+          preset.blockUids.forEach(uid => {
+            const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
+            if (cb) {
+              cb.checked = true;
+              markedCount++;
+              
+              const container = cb.closest('.tree-node');
+              if (container) {
+                const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+                descendantCheckboxes.forEach(childCb => {
+                  childCb.checked = true;
+                  childCb.indeterminate = false;
+                });
+
+                let parentContainer = container.parentElement.closest('.tree-node');
+                while (parentContainer) {
+                  const parentCb = parentContainer.querySelector('.branch-checkbox');
+                  if (parentCb) {
+                    const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+                    if (allDescendants.length > 0) {
+                      const allChecked = allDescendants.every(c => c.checked);
+                      const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                      if (allChecked) {
+                        parentCb.checked = true;
+                        parentCb.indeterminate = false;
+                      } else if (someChecked) {
+                        parentCb.checked = false;
+                        parentCb.indeterminate = true;
+                      } else {
+                        parentCb.checked = false;
+                        parentCb.indeterminate = false;
+                      }
+                    }
+                  }
+                  parentContainer = parentContainer.parentElement.closest('.tree-node');
+                }
+              }
+            }
+          });
+
+          updateBranchCount();
+          updateSelectAllLabel();
+          showNotification(`✓ Cargados ${markedCount} de ${preset.blockUids.length} bloques`, '#28a745');
+        } else {
+          if (confirm(`Este preset es de la página "${preset.pageTitle}". ¿Quieres navegar a esa página para cargarlo?`)) {
+            cleanup();
+            if (window.roamAlphaAPI && window.roamAlphaAPI.ui && window.roamAlphaAPI.ui.mainWindow) {
+              window.roamAlphaAPI.ui.mainWindow.openPage({ page: { uid: preset.pageUid } });
+              
+              sessionStorage.setItem('roam-export-auto-load-preset', JSON.stringify({
+                presetId: preset.id,
+                pageUid: preset.pageUid
+              }));
+
+              setTimeout(() => {
+                unifiedExport();
+              }, 1000);
+            } else {
+              showNotification('No se pudo navegar automáticamente', '#DC143C');
+            }
+          }
+        }
+      });
+    }
+
+    // Toolbar action: Renombrar
+    const tbRename = document.getElementById('toolbar-rename');
+    if (tbRename) {
+      tbRename.addEventListener('click', () => {
+        if (!selectedPresetId) return;
+        const presets = getSavedPresets();
+        const preset = presets.find(p => p.id === selectedPresetId);
+        if (preset) {
+          showPresetRenameDialog(preset);
+        }
+      });
+    }
+
+    // Toolbar action: Fusionar
+    const tbMerge = document.getElementById('toolbar-merge');
+    if (tbMerge) {
+      tbMerge.addEventListener('click', () => {
+        if (!selectedPresetId) return;
+        const presets = getSavedPresets();
+        const preset = presets.find(p => p.id === selectedPresetId);
+        if (!preset) return;
+
+        const selectedUids = getSelectedBranchUids();
+        if (selectedUids.length === 0) {
+          alert('Por favor selecciona al menos un bloque en el árbol para fusionar con este preset.');
+          return;
+        }
+
+        const currentUidsSet = new Set(preset.blockUids);
+        const newUids = selectedUids.filter(uid => !currentUidsSet.has(uid));
+
+        if (newUids.length === 0) {
+          showNotification('Todos los bloques seleccionados ya están en este preset', '#e0a800');
+          return;
+        }
+
+        if (confirm(`¿Estás seguro de que quieres añadir ${newUids.length} bloques nuevos al preset "${preset.name}"?`)) {
+          const mergedUids = [...preset.blockUids, ...newUids];
+          
+          let preview = '';
+          try {
+            const firstUid = mergedUids[0];
+            const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', firstUid]);
+            if (blockData && blockData[':block/string']) {
+              const cleanStr = blockData[':block/string'].trim().replace(/[\[\]]/g, '');
+              preview = cleanStr.substring(0, 45) + (cleanStr.length > 45 ? '...' : '');
+            }
+          } catch (e) {
+            console.error("Error pulling block preview", e);
+          }
+
+          const updatedPresets = getSavedPresets();
+          const idx = updatedPresets.findIndex(p => p.id === preset.id);
+          if (idx !== -1) {
+            updatedPresets[idx].blockUids = mergedUids;
+            updatedPresets[idx].blockCount = mergedUids.length;
+            updatedPresets[idx].description = `${mergedUids.length} bloques` + (preview ? ` ("${preview}")` : '');
+            updatedPresets[idx].createdAt = new Date().toISOString();
+            savePresets(updatedPresets);
+            showNotification(`✓ Se añadieron ${newUids.length} bloques al preset "${preset.name}"`, '#28a745');
+            renderPresetsList();
+            selectPreset(preset.id);
+          }
+        }
+      });
+    }
 
     // Depth selector logic
     const depthSelector = document.getElementById('depth-selector');
@@ -5741,7 +5881,7 @@ const initExtension = () => {
     });
   }
 
-  console.log("Roam Filter Export extension loaded (v2.37.1)");
+  console.log("Roam Filter Export extension loaded (v2.38.0)");
 };
 
 const cleanupExtension = () => {

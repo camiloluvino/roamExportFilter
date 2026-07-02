@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.38.0] - 2026-07-02 02:15
+
+### Redesigned
+- **Rediseño de la pestaña de Presets con Toolbar Unificada**:
+  - Se removieron los 5 botones redundantes de acción de cada preset (`Copiar Texto`, `Copiar UIDs`, `Cargar`, `Renombrar` y `Fusionar`) y se agruparon en una única barra de herramientas estática arriba.
+  - Los presets individuales ahora se renderizan en una lista compacta, libre de desbordamientos.
+
+### Added
+- **Modo de selección de presets**:
+  - Los presets son clickeables y al seleccionarse se resaltan con un color azul distintivo (`#f0f7ff`).
+  - Al seleccionar un preset, los botones de la toolbar se activan dinámicamente.
+  - El botón `Fusionar` en la toolbar valida si el preset corresponde a la página activa actual de Roam y se deshabilita/habilita consecuentemente con tooltips informativos.
+
+### Improved
+- **Rendimiento de Event Listeners**:
+  - Los listeners de los botones de la toolbar se registran de manera estática una sola vez al cargar la extensión, mejorando la velocidad y eliminando re-registros redundantes.
+
+---
+
 ## [2.37.1] - 2026-07-02 01:47
 
 ### Fixed
