@@ -1,5 +1,33 @@
 # Changelog
 
+## [2.37.1] - 2026-07-02 01:47
+
+### Fixed
+- **Falta de foco del cursor al cerrar modales (Caret vertical perdido)**:
+  - Se reemplazó el patrón destructivo `blur() -> setTimeout(focus, 10)` en las 4 funciones de cleanup con un helper centralizado `restoreRoamFocus`.
+  - El helper realiza validaciones de existencia en el DOM (`document.body.contains`) y cuenta con un fallback dinámico que busca el textarea activo actual del editor de bloques de Roam (`textarea.rm-block-input`).
+  - Aumentado el delay a 50ms para acomodar los ciclos asíncronos de actualización de React en Roam Research.
+
+### Improved
+- **Limpieza de overlays huérfanos**:
+  - Se actualizó `cleanupExtension` para limpiar cualquier overlay abierto en el DOM en caso de desactivación de la extensión.
+
+---
+
+## [2.37.0] - 2026-07-02 01:33
+
+### Added
+- **Reordenamiento de Presets por Drag & Drop**:
+  - Arrastre nativo en HTML5 mediante un handle visual (`⠿`).
+  - Indicador visual dinámico (línea de inserción en mitad superior/inferior del preset objetivo).
+  - Persistencia automática e inmediata del nuevo orden en el Grafo.
+
+### Improved
+- **Diseño más limpio para pestaña Presets**:
+  - Se oculta de forma automática la columna derecha de "Opciones de exportación" al estar en la pestaña Presets, permitiendo que la lista de presets use el 100% del ancho del modal.
+
+---
+
 ## [2.36.2] - 2026-06-29 21:42
 
 ### Fixed

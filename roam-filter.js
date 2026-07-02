@@ -1478,6 +1478,22 @@ const cleanTagInput = (input) => {
   return cleaned.trim() || null;
 };
 
+// Helper to restore focus to Roam editor after closing modals
+const restoreRoamFocus = (previousFocus) => {
+  setTimeout(() => {
+    // Try saved reference if it's still in the live DOM
+    if (previousFocus && document.body.contains(previousFocus) && typeof previousFocus.focus === 'function') {
+      previousFocus.focus();
+      return;
+    }
+    // Fallback: find Roam's active textarea
+    const roamTextarea = document.querySelector('textarea.rm-block-input');
+    if (roamTextarea) {
+      roamTextarea.focus();
+    }
+  }, 50);
+};
+
 const showNotification = (message, backgroundColor) => {
   try {
     const notification = document.createElement('div');
@@ -3858,10 +3874,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
     function cleanup() {
       document.body.removeChild(overlay);
       document.removeEventListener('keydown', handleKeydown);
-      document.activeElement?.blur();
-      if (previousFocus && typeof previousFocus.focus === 'function') {
-        setTimeout(() => previousFocus.focus(), 10);
-      }
+      restoreRoamFocus(previousFocus);
     }
 
     const getSelectedBranchUids = () => {
@@ -4560,10 +4573,7 @@ const promptForTag = () => {
 
     const cleanup = () => {
       document.body.removeChild(overlay);
-      document.activeElement?.blur();
-      if (previousFocus && typeof previousFocus.focus === 'function') {
-        setTimeout(() => previousFocus.focus(), 10);
-      }
+      restoreRoamFocus(previousFocus);
     };
 
     const submit = () => {
@@ -4865,10 +4875,7 @@ const promptForRootExport = (pageName, rootCount, rootBlocks, pageUid) => {
     const cleanup = () => {
       clearTimeout(debounceTimer);
       document.body.removeChild(overlay);
-      document.activeElement?.blur();
-      if (previousFocus && typeof previousFocus.focus === 'function') {
-        setTimeout(() => previousFocus.focus(), 10);
-      }
+      restoreRoamFocus(previousFocus);
     };
 
     const submit = () => {
@@ -5349,10 +5356,7 @@ const promptForBranchSelection = (pageName, structure) => {
     function cleanup() {
       document.body.removeChild(overlay);
       document.removeEventListener('keydown', handleEscape);
-      document.activeElement?.blur();
-      if (previousFocus && typeof previousFocus.focus === 'function') {
-        setTimeout(() => previousFocus.focus(), 10);
-      }
+      restoreRoamFocus(previousFocus);
     }
 
     const getSelectedUids = () => {
@@ -5737,10 +5741,15 @@ const initExtension = () => {
     });
   }
 
-  console.log("Roam Filter Export extension loaded (v2.28.0)");
+  console.log("Roam Filter Export extension loaded (v2.37.1)");
 };
 
 const cleanupExtension = () => {
+  // Remove any orphaned modal overlays
+  document.querySelectorAll('div[style*="z-index: 10001"]').forEach(el => {
+    if (el.parentNode) el.parentNode.removeChild(el);
+  });
+
   if (window.roamAlphaAPI?.ui?.commandPalette) {
     window.roamAlphaAPI.ui.commandPalette.removeCommand({ label: "Smart Export" });
     window.roamAlphaAPI.ui.commandPalette.removeCommand({ label: "Export by Root Blocks" });

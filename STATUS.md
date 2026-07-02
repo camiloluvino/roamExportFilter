@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-07-02 01:33
+> **Última actualización**: 2026-07-02 01:47
 
 ---
 
 ## Versión actual
 
-**2.37.0** (2026-07-02 01:33)
+**2.37.1** (2026-07-02 01:47)
 
 ---
 
@@ -42,6 +42,10 @@
 ---
 
 ## Historial reciente
+
+### v2.37.1 (2026-07-02 01:47)
+- Fixed: **Falta de foco del cursor al cerrar modales**. Se reemplazó el patrón destructivo `blur() -> setTimeout(focus, 10)` en las 4 funciones de cleanup con una función helper robusta `restoreRoamFocus` que verifica si el elemento anterior sigue en el DOM de la página activa, y de no ser así, busca el editor de texto activo de Roam (`textarea.rm-block-input`) para devolverle el foco.
+- Improved: **Limpieza de overlays huérfanos**. La función `cleanupExtension` ahora remueve los overlays del DOM al descargar la extensión.
 
 ### v2.37.0 (2026-07-02 01:33)
 - Added: **Reordenamiento de Presets por Drag & Drop**.
