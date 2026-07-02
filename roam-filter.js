@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.36.2
-// Date: 2026-06-29 21:42
+// Version: 2.37.0
+// Date: 2026-07-02 01:33
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -2049,7 +2049,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         </div>
 
         <!-- Right column: Export options & Format settings (Global & Persistent) -->
-        <div style="width: 360px; flex-shrink: 0; overflow-y: auto; min-height: 0; box-sizing: border-box; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 14px;">
+        <div id="export-options-column" style="width: 360px; flex-shrink: 0; overflow-y: auto; min-height: 0; box-sizing: border-box; padding: 12px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee; display: flex; flex-direction: column; gap: 14px;">
           <div style="font-size: 13px; font-weight: 600; color: #444; margin-bottom: 4px; flex-shrink: 0;">⚙ Opciones de exportación</div>
           <div style="flex-shrink: 0;">
             <span style="font-size: 13px; color: #666; display: block; margin-bottom: 6px;">Nomenclatura de archivos:</span>
@@ -2233,6 +2233,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const contentBranches = document.getElementById('content-branches');
     const contentPages = document.getElementById('content-pages');
     const contentPresets = document.getElementById('content-presets');
+    const exportOptionsColumn = document.getElementById('export-options-column');
     const branchNamingSelector = document.getElementById('branch-naming-selector');
     const branchNamingPreview = document.getElementById('branch-naming-preview');
     const orderPrefixEnabled = document.getElementById('order-prefix-enabled');
@@ -2612,7 +2613,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
             `;
 
         return `
-          <div class="preset-item" data-id="${preset.id}" style="
+          <div class="preset-item" data-id="${preset.id}" draggable="true" style="
             border: 1px solid #e2e8f0;
             border-radius: 6px;
             padding: 14px;
@@ -2637,10 +2638,20 @@ const promptUnifiedExport = (pageName, pageUid) => {
               border-radius: 4px;
             " onmouseover="this.style.color='#e53e3e'; this.style.background='#fff5f5';" onmouseout="this.style.color='#a0aec0'; this.style.background='none';">✕</button>
             
-            <div>
-              <div style="font-weight: 600; font-size: 14px; color: #2d3748; padding-right: 24px;">📌 ${preset.name}</div>
-              <div style="font-size: 12px; color: #718096; margin-top: 4px;">
-                ${preset.description} &middot; Origen: <b>${preset.pageTitle}</b> &middot; ${dateStr}
+            <div style="display: flex; align-items: flex-start; gap: 8px;">
+              <div class="preset-drag-handle" style="
+                cursor: grab;
+                padding: 2px 6px;
+                color: #a0aec0;
+                font-size: 16px;
+                user-select: none;
+                margin-top: -2px;
+              " onmouseover="this.style.color='#718096';" onmouseout="this.style.color='#a0aec0';" title="Arrastra para reordenar">⠿</div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; font-size: 14px; color: #2d3748; padding-right: 24px;">📌 ${preset.name}</div>
+                <div style="font-size: 12px; color: #718096; margin-top: 4px;">
+                  ${preset.description} &middot; Origen: <b>${preset.pageTitle}</b> &middot; ${dateStr}
+                </div>
               </div>
             </div>
             
@@ -2900,6 +2911,81 @@ const promptUnifiedExport = (pageName, pageUid) => {
           }
         });
       });
+
+      // Drag & Drop reordering listeners
+      let draggedPresetId = null;
+
+      const resetPresetBorders = () => {
+        container.querySelectorAll('.preset-item').forEach(item => {
+          item.style.borderTop = '1px solid #e2e8f0';
+          item.style.borderBottom = '1px solid #e2e8f0';
+        });
+      };
+
+      container.querySelectorAll('.preset-item').forEach(item => {
+        item.addEventListener('dragstart', (e) => {
+          draggedPresetId = item.dataset.id;
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', item.dataset.id);
+          // Set opacity asynchronously so the drag ghost image remains opaque
+          setTimeout(() => {
+            item.style.opacity = '0.4';
+          }, 0);
+        });
+
+        item.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+
+          const rect = item.getBoundingClientRect();
+          const relY = e.clientY - rect.top;
+          const isAfter = relY > rect.height / 2;
+
+          resetPresetBorders();
+
+          if (isAfter) {
+            item.style.borderBottom = '3px solid #137cbd';
+          } else {
+            item.style.borderTop = '3px solid #137cbd';
+          }
+        });
+
+        item.addEventListener('dragend', () => {
+          item.style.opacity = '';
+          resetPresetBorders();
+          draggedPresetId = null;
+        });
+
+        item.addEventListener('drop', (e) => {
+          e.preventDefault();
+          resetPresetBorders();
+
+          const targetId = item.dataset.id;
+          if (!draggedPresetId || draggedPresetId === targetId) return;
+
+          const rect = item.getBoundingClientRect();
+          const relY = e.clientY - rect.top;
+          const isAfter = relY > rect.height / 2;
+
+          const currentPresets = getSavedPresets();
+          const fromIndex = currentPresets.findIndex(p => p.id === draggedPresetId);
+          if (fromIndex === -1) return;
+
+          const [draggedPreset] = currentPresets.splice(fromIndex, 1);
+          
+          let toIndex = currentPresets.findIndex(p => p.id === targetId);
+          if (toIndex === -1) return;
+
+          if (isAfter) {
+            toIndex += 1;
+          }
+
+          currentPresets.splice(toIndex, 0, draggedPreset);
+          savePresets(currentPresets);
+          renderPresetsList();
+          showNotification('Orden de presets actualizado', '#137cbd');
+        });
+      });
     };
 
     // Tab switching
@@ -2914,6 +3000,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
       contentPages.style.display = 'none';
       contentPresets.style.display = 'none';
       selectionInfo.textContent = '';
+
+      if (exportOptionsColumn) {
+        exportOptionsColumn.style.display = tab === 'presets' ? 'none' : '';
+      }
 
       if (tab === 'branches') {
         tabBranches.style.cssText = tabStyle(true);

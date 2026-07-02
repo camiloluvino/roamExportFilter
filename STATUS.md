@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-06-29 21:42
+> **Última actualización**: 2026-07-02 01:33
 
 ---
 
 ## Versión actual
 
-**2.36.2** (2026-06-29 21:42)
+**2.37.0** (2026-07-02 01:33)
 
 ---
 
@@ -15,7 +15,7 @@
 | Funcionalidad | Estado | Notas |
 |---------------|--------|-------|
 | **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas (Por Ramas, Por Páginas, Presets) con buscador interactivo y administrador de tags favoritos |
-| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques de forma sincronizada en el Grafo (página `roamExportFilter/Settings`). Soporta **Renombrar**, **Fusionar** y migración automática. |
+| **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques de forma sincronizada en el Grafo (página `roamExportFilter/Settings`). Soporta **Renombrar**, **Fusionar**, **Reordenamiento por Drag & Drop** y migración automática. |
 | **Copy UIDs** | ✅ Estable | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
@@ -42,6 +42,14 @@
 ---
 
 ## Historial reciente
+
+### v2.37.0 (2026-07-02 01:33)
+- Added: **Reordenamiento de Presets por Drag & Drop**.
+  - Arrastre nativo en HTML5 mediante un handle visual (`⠿`).
+  - Indicador visual dinámico (línea de inserción en mitad superior/inferior del preset objetivo).
+  - Persistencia automática e inmediata del nuevo orden en el Grafo.
+- Improved: **Diseño más limpio para pestaña Presets**.
+  - Se oculta de forma automática la columna derecha de "Opciones de exportación" al estar en la pestaña Presets, permitiendo que la lista de presets use el 100% del ancho del modal.
 
 ### v2.36.2 (2026-06-29 21:42)
 - Fixed: **Falta de foco del cursor tras cerrar modal**. Ahora se captura el elemento activo de Roam al abrir el modal y se le devuelve el foco de manera programática en la limpieza.
