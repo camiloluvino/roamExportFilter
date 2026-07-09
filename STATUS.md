@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-07-02 02:15
+> **Última actualización**: 2026-07-09 15:52
 
 ---
 
 ## Versión actual
 
-**2.38.0** (2026-07-02 02:15)
+**2.39.0** (2026-07-09 15:52)
 
 ---
 
@@ -17,6 +17,7 @@
 | **Smart Export** | ✅ Estable | Modal unificado con 3 pestañas (Por Ramas, Por Páginas, Presets) con buscador interactivo y administrador de tags favoritos |
 | **Saved Presets** | ✅ Estable | Pestaña "Presets" para guardar/cargar selecciones de bloques de forma sincronizada en el Grafo (página `roamExportFilter/Settings`). Soporta **Renombrar**, **Fusionar**, **Reordenamiento por Drag & Drop** y migración automática. |
 | **Copy UIDs** | ✅ Estable | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
+| **Copy with Ancestors**| ✅ Nuevo | Opción "Incluir ancestros (copiar/exportar)" para copiar o exportar bloques conservando el contexto de los bloques padre |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
 | **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
 | **Shallow Export** | ✅ Nuevo | Opción "Solo texto visible" para omitir sub-bloques anidados |
@@ -42,6 +43,15 @@
 ---
 
 ## Historial reciente
+
+### v2.39.0 (2026-07-09 15:52)
+- Added: **Opción de copiar y exportar con ancestros**.
+  - Nueva casilla interactiva "Incluir ancestros (copiar/exportar)" en el panel de opciones de la derecha.
+  - Función `wrapWithAncestors` para envolver los bloques seleccionados con su jerarquía completa de bloques padres.
+  - Copia de UIDs estructurada e indentada según la jerarquía original.
+  - Exportación a Markdown (combinado e individual) y EPUB estructurados jerárquicamente, con eliminación reactiva de metadata redundante (`Jerarquía original` en bloque de cita) para evitar duplicados.
+  - Soporte integrado en el toolbar de la pestaña de Presets (Copiar Texto y Copiar UIDs).
+- Added: **Tests unitarios para envoltura de ancestros**. Pruebas automatizadas añadidas en la suite `tests.html` para validar la integridad del árbol de ancestros con diferentes niveles de profundidad.
 
 ### v2.38.0 (2026-07-02 02:15)
 - Redesigned: **Rediseño completo de la pestaña de Presets**. Se movieron los 5 botones redundantes y repetidos por fila (`Copiar Texto`, `Copiar UIDs`, `Cargar`, `Renombrar` y `Fusionar`) a una única barra de herramientas (toolbar) estática superior, deshabilitada por defecto.

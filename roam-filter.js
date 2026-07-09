@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.37.0
-// Date: 2026-07-02 01:33
+// Version: 2.39.0
+// Date: 2026-07-09 15:52
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -1079,6 +1079,30 @@ const getOrderedBlockAncestors = (blockUid) => {
     console.error('Error getting ordered ancestors:', err);
   }
   return ancestors;
+};
+
+// Wrap a block tree with its ancestor chain, nesting the block inside them
+const wrapWithAncestors = (blockTree, blockUid) => {
+  const ancestors = getOrderedBlockAncestors(blockUid);
+  if (ancestors.length === 0) return blockTree;
+
+  let wrappedTree = {
+    uid: blockTree.uid,
+    content: blockTree.content,
+    heading: blockTree.heading,
+    children: blockTree.children
+  };
+
+  // Nest wrappedTree under each ancestor, from closest parent to root ancestor
+  for (let i = ancestors.length - 1; i >= 0; i--) {
+    wrappedTree = {
+      uid: ancestors[i].uid,
+      content: ancestors[i].content,
+      heading: 0,
+      children: [wrappedTree]
+    };
+  }
+  return wrappedTree;
 };
 
 // Get block ancestors from page to the block itself
@@ -2216,6 +2240,16 @@ const promptUnifiedExport = (pageName, pageUid) => {
           
           <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
 
+          <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; flex-shrink: 0;">
+            <input type="checkbox" id="include-ancestors-enabled">
+            <span>Incluir ancestros (copiar/exportar)</span>
+          </label>
+          <div id="include-ancestors-hint" style="display: none; font-size: 11px; color: #888; padding-left: 24px; margin-top: -4px; flex-shrink: 0;">
+            Incluye los bloques ancestros manteniendo la jerarquía.
+          </div>
+
+          <div style="height: 1px; background: #e0e0e0; margin: 8px 0; flex-shrink: 0;"></div>
+
           <!-- Persistent Favorite Tags Manager -->
           <div id="favorite-tags-manager" style="display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;">
             <span style="font-size: 13px; color: #666; font-weight: 600; display: flex; align-items: center; gap: 4px;">🏷️ Tags Favoritos:</span>
@@ -2363,8 +2397,10 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const copyUidsBtn = document.getElementById('unified-copy-uids');
     const exportBtn = document.getElementById('unified-export');
     const savePresetBtn = document.getElementById('save-as-preset');
-    const shallowExportEnabled = document.getElementById('shallow-export-enabled');
+     const shallowExportEnabled = document.getElementById('shallow-export-enabled');
     const shallowExportHint = document.getElementById('shallow-export-hint');
+    const includeAncestorsEnabled = document.getElementById('include-ancestors-enabled');
+    const includeAncestorsHint = document.getElementById('include-ancestors-hint');
     const treeContainer = document.getElementById('branch-tree-container');
     const mergeExportEnabled = document.getElementById('merge-export-enabled');
     const mergeExportLabel = document.getElementById('merge-export-label');
@@ -2472,13 +2508,17 @@ const promptUnifiedExport = (pageName, pageUid) => {
       writeGraphSetting('presets', presets, []);
     };
 
-    const getMarkdownForUids = async (uids) => {
+    const getMarkdownForUids = async (uids, includeAncestors = false) => {
       const allSections = [];
       for (const uid of uids) {
         try {
           const branchTree = getBlockWithDescendants(uid);
           if (!branchTree) continue;
-          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+          let treeForMarkdown = branchTree;
+          if (includeAncestors) {
+            treeForMarkdown = wrapWithAncestors(branchTree, uid);
+          }
+          const markdown = treeToMarkdown([treeForMarkdown], 0, mdOptions);
           if (markdown) {
             allSections.push(markdown);
           }
@@ -3008,7 +3048,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
         showNotification('Procesando bloques...', '#137CBD');
         try {
-          const markdown = await getMarkdownForUids(preset.blockUids);
+          const markdown = await getMarkdownForUids(preset.blockUids, includeAncestorsEnabled.checked);
           if (!markdown) {
             showNotification('⚠️ Bloques vacíos o ya no existen', '#e0a800');
             return;
@@ -3034,7 +3074,26 @@ const promptUnifiedExport = (pageName, pageUid) => {
         const preset = presets.find(p => p.id === selectedPresetId);
         if (!preset) return;
         
-        const uidText = preset.blockUids.map(uid => `((${uid}))`).join('\n');
+        let uidText;
+        if (includeAncestorsEnabled.checked) {
+          const allLines = [];
+          for (let idx = 0; idx < preset.blockUids.length; idx++) {
+            const uid = preset.blockUids[idx];
+            const ancestors = getOrderedBlockAncestors(uid);
+            let indent = '';
+            for (const anc of ancestors) {
+              allLines.push(`${indent}((${anc.uid}))`);
+              indent += '  ';
+            }
+            allLines.push(`${indent}((${uid}))`);
+            if (idx < preset.blockUids.length - 1) {
+              allLines.push('');
+            }
+          }
+          uidText = allLines.join('\n');
+        } else {
+          uidText = preset.blockUids.map(uid => `((${uid}))`).join('\n');
+        }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(uidText)
             .then(() => showNotification(`✓ ${preset.blockUids.length} UIDs copiados`, '#28a745'))
@@ -4032,6 +4091,11 @@ const promptUnifiedExport = (pageName, pageUid) => {
       shallowExportHint.style.display = shallowExportEnabled.checked ? 'block' : 'none';
     });
 
+    // Hint toggle for include ancestors
+    includeAncestorsEnabled.addEventListener('change', () => {
+      includeAncestorsHint.style.display = includeAncestorsEnabled.checked ? 'block' : 'none';
+    });
+
     const triggerAction = (action) => {
       if (activeTab === 'filters') {
         const tagValue = tagInput.value.trim();
@@ -4077,6 +4141,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
           format: selectedFormat,
           action: action,
           shallowExport: shallowExportEnabled.checked,
+          includeAncestors: includeAncestorsEnabled.checked,
           epubOptions: { ...epubOptions },
           mdOptions: { ...mdOptions }
         });
@@ -4132,7 +4197,26 @@ const promptUnifiedExport = (pageName, pageUid) => {
           alert('Por favor selecciona al menos una rama para copiar sus UIDs.');
           return;
         }
-        const uidText = selectedUids.map(uid => `((${uid}))`).join('\n');
+        let uidText;
+        if (includeAncestorsEnabled.checked) {
+          const allLines = [];
+          for (let idx = 0; idx < selectedUids.length; idx++) {
+            const uid = selectedUids[idx];
+            const ancestors = getOrderedBlockAncestors(uid);
+            let indent = '';
+            for (const anc of ancestors) {
+              allLines.push(`${indent}((${anc.uid}))`);
+              indent += '  ';
+            }
+            allLines.push(`${indent}((${uid}))`);
+            if (idx < selectedUids.length - 1) {
+              allLines.push(''); // blank line between selected blocks
+            }
+          }
+          uidText = allLines.join('\n');
+        } else {
+          uidText = selectedUids.map(uid => `((${uid}))`).join('\n');
+        }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(uidText)
             .then(() => showNotification(`✓ ${selectedUids.length} UIDs copiados al portapapeles`, '#28a745'))
@@ -4278,7 +4362,7 @@ const unifiedExport = async () => {
 
     if (result.mode === 'branches') {
       // Export by branch selection
-      const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, action, shallowExport, epubOptions, mdOptions, branchNamingStrategy = 'block', mergeIntoSingle, mergeFilename } = result;
+      const { selectedUids, filterTag, useOrderPrefix, useDescendingOrder, format, action, shallowExport, includeAncestors, epubOptions, mdOptions, branchNamingStrategy = 'block', mergeIntoSingle, mergeFilename } = result;
 
       showNotification(`📄 Procesando ${selectedUids.length} ramas...`, '#137CBD');
 
@@ -4350,7 +4434,7 @@ const unifiedExport = async () => {
         showNotification(`📚 Generando EPUB con ${branchTrees.length} ramas...`, '#137CBD');
 
         // Build combined tree for EPUB
-        const combinedTree = branchTrees.map(b => b.tree);
+        const combinedTree = branchTrees.map(b => includeAncestors ? wrapWithAncestors(b.tree, b.tree.uid) : b.tree);
         const title = `${pageName}${filterTag ? ` - ${filterTag}` : ''}`;
 
         const success = await downloadAsEpub(combinedTree, title, epubOptions);
@@ -4364,7 +4448,8 @@ const unifiedExport = async () => {
         const allSections = [];
 
         for (const { tree: branchTree } of branchTrees) {
-          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+          const treeForMarkdown = includeAncestors ? wrapWithAncestors(branchTree, branchTree.uid) : branchTree;
+          const markdown = treeToMarkdown([treeForMarkdown], 0, mdOptions);
 
           if (action === 'copy') {
             allSections.push(markdown);
@@ -4375,7 +4460,7 @@ const unifiedExport = async () => {
           const ancestors = getOrderedBlockAncestors(branchTree.uid);
 
           let ancestorsContext = "";
-          if (ancestors.length > 0) {
+          if (!includeAncestors && ancestors.length > 0) {
             ancestorsContext = "\n>\n> **Jerarquía original:**\n";
             let indent = "> ";
             for (const anc of ancestors) {
@@ -4441,14 +4526,15 @@ const unifiedExport = async () => {
           }
 
           const ancestors = getOrderedBlockAncestors(branchTree.uid);
-          const markdown = treeToMarkdown([branchTree], 0, mdOptions);
+          const treeForMarkdown = includeAncestors ? wrapWithAncestors(branchTree, branchTree.uid) : branchTree;
+          const markdown = treeToMarkdown([treeForMarkdown], 0, mdOptions);
 
           let contentToSave;
           if (action === 'copy') {
             contentToSave = markdown;
           } else {
             let ancestorsContext = "";
-            if (ancestors.length > 0) {
+            if (!includeAncestors && ancestors.length > 0) {
               ancestorsContext = "\n>\n> **Jerarquía original:**\n";
               let indent = "> ";
               for (const anc of ancestors) {

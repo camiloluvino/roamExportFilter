@@ -353,6 +353,62 @@
       assert(lines.length === 0, 'Should return empty array for empty target set');
     });
 
+    // Test 23: wrapWithAncestors - should return same tree if no ancestors
+    runner.test('wrapWithAncestors - should return same tree if no ancestors', () => {
+      const originalQ = window.roamAlphaAPI.data ? window.roamAlphaAPI.data.q : null;
+      if (!window.roamAlphaAPI.data) window.roamAlphaAPI.data = {};
+      window.roamAlphaAPI.data.q = () => []; // No ancestors found
+
+      const tree = { uid: 'target-uid', content: 'Target Block', children: [] };
+      const wrapped = wrapWithAncestors(tree, 'target-uid');
+      
+      assertEqual(wrapped.uid, 'target-uid', 'Should keep same uid');
+      assertEqual(wrapped.content, 'Target Block', 'Should keep same content');
+      assertEqual(wrapped.children.length, 0, 'Should keep empty children');
+      
+      if (originalQ) window.roamAlphaAPI.data.q = originalQ;
+    });
+
+    // Test 24: wrapWithAncestors - should wrap tree with ancestor chain
+    runner.test('wrapWithAncestors - should wrap tree with ancestor chain', () => {
+      const originalQ = window.roamAlphaAPI.data ? window.roamAlphaAPI.data.q : null;
+      if (!window.roamAlphaAPI.data) window.roamAlphaAPI.data = {};
+      
+      // Mock q to simulate: target-uid -> parent-uid -> grandparent-uid
+      window.roamAlphaAPI.data.q = (query) => {
+        if (query.includes('target-uid')) {
+          return [['parent-uid', 'Parent Block']];
+        }
+        if (query.includes('parent-uid')) {
+          return [['grandparent-uid', 'Grandparent Block']];
+        }
+        return [];
+      };
+
+      const tree = { uid: 'target-uid', content: 'Target Block', children: [{ uid: 'child-uid', content: 'Child' }] };
+      const wrapped = wrapWithAncestors(tree, 'target-uid');
+
+      // Grandparent should be the root of the wrapped tree
+      assertEqual(wrapped.uid, 'grandparent-uid', 'Root should be grandparent');
+      assertEqual(wrapped.content, 'Grandparent Block', 'Root content should be grandparent content');
+      assertEqual(wrapped.children.length, 1, 'Grandparent should have 1 child');
+      
+      // Grandparent's child should be Parent
+      const parent = wrapped.children[0];
+      assertEqual(parent.uid, 'parent-uid', 'Parent node should match parent-uid');
+      assertEqual(parent.content, 'Parent Block', 'Parent content should match');
+      assertEqual(parent.children.length, 1, 'Parent should have 1 child');
+
+      // Parent's child should be Target
+      const target = parent.children[0];
+      assertEqual(target.uid, 'target-uid', 'Target node should match target-uid');
+      assertEqual(target.content, 'Target Block', 'Target content should match');
+      assertEqual(target.children.length, 1, 'Target should retain its child');
+      assertEqual(target.children[0].uid, 'child-uid', 'Target child should be child-uid');
+
+      if (originalQ) window.roamAlphaAPI.data.q = originalQ;
+    });
+
     // Run all tests
     runner.run();
   </script>
