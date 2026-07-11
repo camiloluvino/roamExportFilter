@@ -4,7 +4,7 @@
 
 ## Descripción del proyecto
 
-Plugin para Roam Research que exporta contenido filtrado usando consultas Datalog. Funciona incluso cuando los bloques están colapsados. Ofrece múltiples modos: copia rápida con selección visual (`Alt+Shift+C`), exportación a archivo Markdown por tag, exportación por bloques raíz, y exportación por selección manual de ramas.
+Plugin para Roam Research que exporta contenido filtrado usando consultas Datalog. Funciona incluso cuando los bloques están colapsados. Ofrece múltiples modos: exportación a archivo Markdown por tag a través del modal, exportación por bloques raíz, y exportación por selección manual de ramas.
 
 ---
 
@@ -58,8 +58,7 @@ Busca estos comentarios en el código para ubicar cada sección:
 - **export-by-root.js** - Exportación por bloques raíz
 - **tree-builder.js** - Construcción de árboles unificados
 - **exporter.js** - Conversión a Markdown y descarga
-- **MAIN EXTENSION LOGIC** - UI y orquestación de export/copy by tag
-- **VISUAL SELECTION COPY** - Alt+Shift+C para bloques seleccionados
+- **MAIN EXTENSION LOGIC** - UI y orquestación de export/copy
 - **EXTENSION INITIALIZATION** - Registro de comandos y cleanup
 
 ### Flujo de Datos y Arquitectura:
@@ -87,11 +86,11 @@ s.src = 'https://camiloluvino.github.io/roamFilter/roam-filter.js';
 
 ### Variable DEBUG
 
-Línea ~549. Habilita logs extensivos en consola. En producción debería ser `false`, pero se mantiene `true` para desarrollo activo.
+Línea ~664. Habilita logs extensivos en consola. En producción debería ser `false` (valor por defecto actual).
 
 ### Constante FAVORITE_TAGS
 
-Línea ~553. Lista editable de tags frecuentes para el modal de export by root blocks.
+Línea ~668. Lista editable de tags frecuentes para el modal de export by root blocks.
 
 ---
 

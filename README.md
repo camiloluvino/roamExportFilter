@@ -22,7 +22,6 @@ Plugin para Roam Research que exporta contenido filtrado usando consultas Datalo
 | Comando | Activación | Descripción |
 |---------|------------|-------------|
 | **Smart Export** | Command Palette | Modal unificado de exportación |
-| **Smart Copy Selected Blocks** | `Alt+Shift+C` | Copia bloques seleccionados (azules) |
 | **Export by Root Blocks** | Command Palette | Cada bloque raíz como archivo separado |
 
 ## Instalación (CDN - Recomendada)

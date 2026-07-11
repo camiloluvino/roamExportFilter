@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-07-09 15:52
+> **Última actualización**: 2026-07-11 01:00
 
 ---
 
 ## Versión actual
 
-**2.39.0** (2026-07-09 15:52)
+**2.40.0** (2026-07-11 01:00)
 
 ---
 
@@ -31,7 +31,7 @@
 
 ## Problemas conocidos
 
-- [ ] `DEBUG = true` en código — Cambiar a `false` antes de release de producción
+*Ninguno activo.*
 
 ---
 
@@ -43,6 +43,14 @@
 ---
 
 ## Historial reciente
+
+### v2.40.0 (2026-07-11 01:00)
+- Cleaned: **Eliminación masiva de código muerto (~800 líneas)**.
+  - Removida la lógica obsoleta de "Visual Selection Copy" (atajo `Alt+Shift+C`) ya inactiva.
+  - Removida la lógica del antiguo modal de filtrado por tags (`promptForTag`, `exportFilteredContent`, `copyFilteredContent`).
+  - Removido el modal legacy de selección por ramas (`exportByBranchSelection`, `promptForBranchSelection`, `fetchBlocksForExport`).
+- Fixed: **DEBUG desactivado**. Configurada la constante `DEBUG` a `false` por defecto para evitar sobrecarga de logs en la consola del navegador y mejorar el rendimiento.
+- Updated: **Sincronización de versión**. Actualizada la versión de console.log y cabeceras a `v2.40.0`.
 
 ### v2.39.0 (2026-07-09 15:52)
 - Added: **Opción de copiar y exportar con ancestros**.

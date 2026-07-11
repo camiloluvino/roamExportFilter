@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.40.0] - 2026-07-11 01:00
+
+### Fixed
+- **DEBUG desactivado**: Configurada la constante `DEBUG` a `false` por defecto para evitar sobrecarga en la consola y mejorar el rendimiento de la exportación.
+- **Sincronización de versión**: Corregido mismatch en consola que mostraba `v2.38.0`.
+
+### Removed
+- **Eliminación de código muerto**: Removidas ~800 líneas de código obsoleto sin referencias (modals legacy, visual copy `Alt+Shift+C` y branch selector antiguo).
+
+---
+
+## [2.39.0] - 2026-07-09 15:52
+
+### Added
+- **Opción de copiar y exportar con ancestros**: Nueva casilla interactiva "Incluir ancestros" en el panel de opciones. Envuelve bloques seleccionados con su jerarquía completa de bloques padres.
+- **Tests unitarios para ancestros**: Pruebas automatizadas en `tests.html` para validar la integridad del árbol de ancestros.
+
+---
+
 ## [2.38.0] - 2026-07-02 02:15
 
 ### Redesigned
