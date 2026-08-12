@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.40.0
-// Date: 2026-07-11 01:00
+// Version: 2.41.0
+// Date: 2026-08-11 22:45
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -59,9 +59,14 @@ const getCurrentPageUid = () => {
     // Convert date to Roam's daily page title format
     const dateStr = dailyMatch[1];
     const [month, day, year] = dateStr.split('-');
-    const date = new Date(year, month - 1, day);
-    const options = { month: 'long', day: 'numeric', year: 'numeric' };
-    const roamDateTitle = date.toLocaleDateString('en-US', options);
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'];
+    const d = parseInt(day, 10);
+    const m = parseInt(month, 10);
+    const suffix = (d % 10 === 1 && d !== 11) ? 'st'
+      : (d % 10 === 2 && d !== 12) ? 'nd'
+        : (d % 10 === 3 && d !== 13) ? 'rd' : 'th';
+    const roamDateTitle = `${months[m - 1]} ${d}${suffix}, ${year}`;
 
     // Get the page UID for this date title
     const result = window.roamAlphaAPI.data.q(`
@@ -948,7 +953,7 @@ const treeToMarkdown = (trees, indentLevel = 0, options = {}) => {
         lines.push(`${nodeText}\n`);
       }
     } else {
-      lines.push(`${indent}- ${nodeText}`);
+      lines.push(`${indent}- ${nodeText || ''}`);
     }
 
     if (node.children && node.children.length > 0) {
@@ -1157,10 +1162,10 @@ const roamMarkupToHtml = (str) => {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Roam specific links
+  // Hash Tags: #[[Tag]] — MUST come before [[Page]] to avoid partial match
+  html = html.replace(/#\[\[(.*?)\]\]/g, '<span class="roam-tag">#$1</span>');
   // Page refs: [[Page]]
   html = html.replace(/\[\[(.*?)\]\]/g, '<span class="roam-page">$1</span>');
-  // Hash Tags: #[[Tag]]
-  html = html.replace(/#\[\[(.*?)\]\]/g, '<span class="roam-tag">#$1</span>');
   // Simple Hash Tags: #Tag
   html = html.replace(/#([a-zA-Z0-9_\-]+)/g, '<span class="roam-tag">#$1</span>');
 
@@ -1310,6 +1315,89 @@ const epubCreateNavXhtml = (title) => {
 </body>
 </html>`;
 };
+
+const epubCreateContentOpfMulti = (title, uuid, date, chapters) => {
+  const manifestItems = chapters.map((_, i) =>
+    `    <item id="chapter${i + 1}" href="chapter${i + 1}.xhtml" media-type="application/xhtml+xml"/>`
+  ).join('\n');
+
+  const spineItems = chapters.map((_, i) =>
+    `    <itemref idref="chapter${i + 1}"/>`
+  ).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="BookId">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="BookId">urn:uuid:${uuid}</dc:identifier>
+    <dc:title>${escapeHTML(title)}</dc:title>
+    <dc:creator>Roam Export Filter</dc:creator>
+    <dc:language>es</dc:language>
+    <dc:date>${date}</dc:date>
+    <meta property="dcterms:modified">${new Date().toISOString().replace(/\.\d{3}Z$/, 'Z')}</meta>
+  </metadata>
+  <manifest>
+    <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="css" href="styles.css" media-type="text/css"/>
+${manifestItems}
+  </manifest>
+  <spine toc="ncx">
+    <itemref idref="nav"/>
+${spineItems}
+  </spine>
+</package>`;
+};
+
+const epubCreateTocNcxMulti = (title, uuid, chapters) => {
+  const navPoints = chapters.map((ch, i) =>
+    `    <navPoint id="navpoint${i + 2}" playOrder="${i + 2}">
+      <navLabel><text>${escapeHTML(ch.title || `Capítulo ${i + 1}`)}</text></navLabel>
+      <content src="chapter${i + 1}.xhtml"/>
+    </navPoint>`
+  ).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head>
+    <meta name="dtb:uid" content="urn:uuid:${uuid}"/>
+    <meta name="dtb:depth" content="1"/>
+    <meta name="dtb:totalPageCount" content="0"/>
+    <meta name="dtb:maxPageNumber" content="0"/>
+  </head>
+  <docTitle><text>${escapeHTML(title)}</text></docTitle>
+  <navMap>
+    <navPoint id="navpoint1" playOrder="1">
+      <navLabel><text>Tabla de Contenidos</text></navLabel>
+      <content src="nav.xhtml"/>
+    </navPoint>
+${navPoints}
+  </navMap>
+</ncx>`;
+};
+
+const epubCreateNavXhtmlMulti = (title, chapters) => {
+  const navItems = chapters.map((ch, i) =>
+    `      <li><a href="chapter${i + 1}.xhtml">${escapeHTML(ch.title || `Capítulo ${i + 1}`)}</a></li>`
+  ).join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
+<head>
+  <title>${escapeHTML(title)}</title>
+  <link rel="stylesheet" type="text/css" href="styles.css"/>
+</head>
+<body>
+  <nav epub:type="toc" id="toc">
+    <h1>Tabla de Contenidos</h1>
+    <ol>
+${navItems}
+    </ol>
+  </nav>
+</body>
+</html>`;
+};
+
 
 const epubCreateStylesCss = (options = {}) => {
   const {
@@ -1465,6 +1553,49 @@ const generateEpubBlob = async (tree, title, options = {}) => {
   });
 };
 
+// Generate multi-chapter EPUB blob
+const generateMultiChapterEpubBlob = async (chapters, bookTitle, options = {}) => {
+  const JSZip = await loadJSZip();
+  const zip = new JSZip();
+
+  const uuid = generateEpubUUID();
+  const date = new Date().toISOString().split('T')[0];
+
+  // 1. mimetype — MUST be first file and uncompressed (EPUB spec)
+  zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+
+  // 2. META-INF/container.xml
+  zip.file('META-INF/container.xml', epubCreateContainerXml());
+
+  // 3. OEBPS/content.opf (EPUB 3.0 package)
+  zip.file('OEBPS/content.opf', epubCreateContentOpfMulti(bookTitle, uuid, date, chapters));
+
+  // 4. OEBPS/toc.ncx (EPUB 2.0 navigation — backward compat)
+  zip.file('OEBPS/toc.ncx', epubCreateTocNcxMulti(bookTitle, uuid, chapters));
+
+  // 5. OEBPS/nav.xhtml (EPUB 3.0 navigation)
+  zip.file('OEBPS/nav.xhtml', epubCreateNavXhtmlMulti(bookTitle, chapters));
+
+  // 6. OEBPS/styles.css
+  zip.file('OEBPS/styles.css', epubCreateStylesCss(options));
+
+  // 7. OEBPS/chapterN.xhtml
+  chapters.forEach((ch, idx) => {
+    const chapterNum = idx + 1;
+    const bodyXhtml = treeToXhtml(Array.isArray(ch.tree) ? ch.tree : [ch.tree], options);
+    const chTitle = ch.title || `Capítulo ${chapterNum}`;
+    zip.file(`OEBPS/chapter${chapterNum}.xhtml`, epubCreateChapterXhtml(chTitle, bodyXhtml));
+  });
+
+  return await zip.generateAsync({
+    type: 'blob',
+    mimeType: 'application/epub+zip',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 9 }
+  });
+};
+
+
 // Generate and download EPUB file
 const downloadAsEpub = async (tree, title, options = {}) => {
   try {
@@ -1506,7 +1637,11 @@ const cleanTagInput = (input) => {
 const restoreRoamFocus = (previousFocus) => {
   setTimeout(() => {
     // Try saved reference if it's still in the live DOM
-    if (previousFocus && document.body.contains(previousFocus) && typeof previousFocus.focus === 'function') {
+    if (previousFocus && 
+        previousFocus !== document.body && 
+        previousFocus !== document.documentElement && 
+        document.body.contains(previousFocus) && 
+        typeof previousFocus.focus === 'function') {
       previousFocus.focus();
       return;
     }
@@ -1707,25 +1842,27 @@ const promptUnifiedExport = (pageName, pageUid) => {
       
       // Try to read from Roam graph
       const graphTags = readGraphSetting('favoriteTags', defaultTags);
-      if (graphTags) {
-        cachedFavoriteTags = graphTags;
-        return graphTags;
-      }
 
-      // Fallback/Migration: check if local storage has them
+      // Check if localStorage still has un-migrated tags
       const stored = localStorage.getItem('roam-export-favorite-tags');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          cachedFavoriteTags = parsed;
-          // Save to graph for future sync
-          writeGraphSetting('favoriteTags', parsed, defaultTags);
-          // Remove local so we know we migrated
-          localStorage.removeItem('roam-export-favorite-tags');
-          return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const merged = [...new Set([...parsed, ...(graphTags || [])])];
+            cachedFavoriteTags = merged;
+            writeGraphSetting('favoriteTags', merged, defaultTags);
+            localStorage.removeItem('roam-export-favorite-tags');
+            return merged;
+          }
         } catch (e) {
           // fallback
         }
+      }
+
+      if (graphTags) {
+        cachedFavoriteTags = graphTags;
+        return graphTags;
       }
 
       cachedFavoriteTags = defaultTags;
@@ -2065,10 +2202,41 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
           <!-- Presets content -->
           <div id="content-presets" style="display: none; flex-direction: column; flex: 1; min-height: 0;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <p style="margin: 0; font-size: 14px; color: #666;">
-                Selecciones de bloques preguardadas (presets) para reutilizar en cualquier momento:
-              </p>
+            <!-- Index Page Configuration -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; flex-shrink: 0; padding: 4px 0;">
+              <span style="font-size: 13px; font-weight: 600; color: #5c7080;">Página de Índice:</span>
+              <input type="text" id="index-page-title-input" style="
+                padding: 6px 10px;
+                font-size: 13px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                flex: 1;
+                box-sizing: border-box;
+              " placeholder="Ej: Índice de contenidos" />
+              <button id="index-page-title-save" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: none;
+                border-radius: 4px;
+                background: #137CBD;
+                color: white;
+                cursor: pointer;
+                font-weight: 600;
+              " onmouseover="this.style.background='#106ba3'" onmouseout="this.style.background='#137CBD'">
+                Guardar
+              </button>
+              <button id="open-index-page-btn" style="
+                padding: 6px 12px;
+                font-size: 12px;
+                border: 1px solid #137CBD;
+                border-radius: 4px;
+                background: white;
+                color: #137CBD;
+                cursor: pointer;
+                font-weight: 600;
+              " onmouseover="this.style.background='#f0f8ff'" onmouseout="this.style.background='white'">
+                📖 Abrir Página
+              </button>
             </div>
             <!-- Presets Toolbar -->
             <div id="presets-toolbar" style="
@@ -2134,42 +2302,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
               " onmouseover="this.style.background='#f6fff9'" onmouseout="this.style.background='white'">
                 📂 Cargar
               </button>
-              <button id="toolbar-rename" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #5c7080;
-                border-radius: 4px;
-                background: white;
-                color: #5c7080;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                opacity: 0.5;
-                pointer-events: none;
-                transition: all 0.2s;
-              " onmouseover="this.style.background='#f5f8fa'" onmouseout="this.style.background='white'">
-                ✏️ Renombrar
-              </button>
-              <button id="toolbar-merge" style="
-                padding: 6px 12px;
-                font-size: 12px;
-                border: 1px solid #722ed1;
-                border-radius: 4px;
-                background: white;
-                color: #722ed1;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 4px;
-                opacity: 0.5;
-                pointer-events: none;
-                transition: all 0.2s;
-              " onmouseover="this.style.background='#f9f0ff'" onmouseout="this.style.background='white'">
-                🔄 Fusionar
-              </button>
               <span id="presets-selection-info" style="font-size: 12px; color: #8a9ba8; margin-left: 8px; font-style: italic;">
-                Selecciona un preset de la lista
+                Selecciona un nodo del índice
               </span>
             </div>
             <div id="presets-list-container" style="
@@ -2182,7 +2316,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
               background: #fafafa;
               display: flex;
               flex-direction: column;
-              gap: 12px;
+              gap: 4px;
             ">
               <!-- Rendered dynamically -->
             </div>
@@ -2455,57 +2589,258 @@ const promptUnifiedExport = (pageName, pageUid) => {
     };
 
     // Presets storage helper (scoped by graph - now synced in graph!)
+    // Presets storage helper (scoped by graph - now synced in graph!)
     const getSavedPresets = () => {
       if (cachedPresets) return cachedPresets;
 
       // Try to read from Roam graph
       const graphPresets = readGraphSetting('presets', []);
-      if (graphPresets) {
+
+      // Check for un-migrated localStorage presets FIRST
+      const graphName = getGraphName();
+      const graphKey = `roam-export-presets-${graphName}`;
+      const legacyKey = 'roam-export-presets';
+      const stored = localStorage.getItem(graphKey) || localStorage.getItem(legacyKey);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            cachedPresets = parsed;
+            writeGraphSetting('presets', parsed, []);
+            localStorage.removeItem(graphKey);
+            localStorage.removeItem(legacyKey);
+            return parsed;
+          }
+        } catch (e) {
+          console.error("Error migrating presets from localStorage", e);
+        }
+      }
+
+      if (graphPresets && Array.isArray(graphPresets) && graphPresets.length > 0) {
         cachedPresets = graphPresets;
         return graphPresets;
       }
 
-      // Fallback/Migration: check if graph-scoped localStorage has them
-      const graphName = getGraphName();
-      const graphKey = `roam-export-presets-${graphName}`;
-      const stored = localStorage.getItem(graphKey);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          cachedPresets = parsed;
-          // Save to graph for future sync
-          writeGraphSetting('presets', parsed, []);
-          // Remove local so we know we migrated
-          localStorage.removeItem(graphKey);
-          return parsed;
-        } catch (e) {
-          console.error("Error migrating graph-scoped presets from localStorage", e);
-        }
-      } else {
-        // Migration: check if old key exists in localStorage
-        const legacyStored = localStorage.getItem('roam-export-presets');
-        if (legacyStored) {
-          try {
-            const parsed = JSON.parse(legacyStored);
-            cachedPresets = parsed;
-            // Save to graph for future sync
-            writeGraphSetting('presets', parsed, []);
-            // Remove legacy storage so it doesn't leak into other graphs
-            localStorage.removeItem('roam-export-presets');
-            return parsed;
-          } catch (e) {
-            console.error("Error migrating legacy presets", e);
-          }
-        }
-      }
-
-      cachedPresets = [];
-      return [];
+      cachedPresets = graphPresets || [];
+      return cachedPresets;
     };
 
     const savePresets = (presets) => {
       cachedPresets = presets;
       writeGraphSetting('presets', presets, []);
+    };
+
+    // New Index Page Helpers
+    const getIndexPageTitle = () => {
+      const stored = readGraphSetting('indexPageTitle', 'Índice de contenidos');
+      return stored || 'Índice de contenidos';
+    };
+
+    const setIndexPageTitle = (title) => {
+      writeGraphSetting('indexPageTitle', title, 'Índice de contenidos');
+    };
+
+    const getPageUidByTitle = (title) => {
+      try {
+        if (!window.roamAlphaAPI || !window.roamAlphaAPI.data || typeof window.roamAlphaAPI.data.q !== 'function') {
+          return null;
+        }
+        const result = window.roamAlphaAPI.data.q(`
+          [:find ?uid
+           :where [?e :node/title "${title.replace(/"/g, '\\"')}"] [?e :block/uid ?uid]]
+        `);
+        if (result && result.length > 0) {
+          return result[0][0];
+        }
+      } catch (e) {
+        console.error("Error getting page uid by title", e);
+      }
+      return null;
+    };
+
+    const getPageUidOfBlock = (bUid) => {
+      try {
+        if (!window.roamAlphaAPI || !window.roamAlphaAPI.data || typeof window.roamAlphaAPI.data.q !== 'function') {
+          return null;
+        }
+        const result = window.roamAlphaAPI.data.q(`
+          [:find ?pageUid
+           :where [?b :block/uid "${bUid}"]
+                  [?b :block/page ?p]
+                  [?p :block/uid ?pageUid]]
+        `);
+        if (result && result.length > 0) {
+          return result[0][0];
+        }
+      } catch (e) {
+        console.error("Error finding page of block", bUid, e);
+      }
+      return null;
+    };
+
+    const getPagesForBlockUids = (uids) => {
+      try {
+        const mapping = {};
+        for (const uid of uids) {
+          const pUid = getPageUidOfBlock(uid);
+          if (pUid) {
+            if (!mapping[pUid]) {
+              mapping[pUid] = [];
+            }
+            mapping[pUid].push(uid);
+          }
+        }
+        return mapping;
+      } catch (e) {
+        console.error("Error batch fetching page info", e);
+        return {};
+      }
+    };
+
+    const getIndexPageTree = (pageTitle) => {
+      const pageUid = getPageUidByTitle(pageTitle);
+      if (!pageUid) return null;
+      
+      const rootBlocks = getRootBlocks(pageUid);
+      const treeNodes = [];
+      for (const root of rootBlocks) {
+        const rootUid = root[':block/uid'] || root.uid;
+        const rootTree = getBlockWithDescendants(rootUid);
+        if (rootTree) {
+          treeNodes.push(rootTree);
+        }
+      }
+      return {
+        uid: pageUid,
+        title: pageTitle,
+        children: treeNodes
+      };
+    };
+
+    // Helper to count block references in tree
+    const countBlockRefsInTree = (node) => {
+      let count = 0;
+      const regex = /\(\(([\w-]{9})\)\)/g;
+      let match;
+      while ((match = regex.exec(node.content)) !== null) {
+        count++;
+      }
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          count += countBlockRefsInTree(child);
+        }
+      }
+      return count;
+    };
+
+    // Helper to gather block references in tree
+    const getBlockRefsInTree = (node) => {
+      let uids = [];
+      const regex = /\(\(([\w-]{9})\)\)/g;
+      let match;
+      while ((match = regex.exec(node.content)) !== null) {
+        uids.push(match[1]);
+      }
+      if (node.children && node.children.length > 0) {
+        for (const child of node.children) {
+          uids = uids.concat(getBlockRefsInTree(child));
+        }
+      }
+      return uids;
+    };
+
+    // Helper to create page and inbox if needed
+    const createPageAndInboxIfNeeded = (pageTitle) => {
+      let pageUid = getPageUidByTitle(pageTitle);
+      if (!pageUid) {
+        pageUid = generateUID();
+        window.roamAlphaAPI.createPage({
+          page: {
+            title: pageTitle,
+            uid: pageUid
+          }
+        });
+      }
+      
+      const qResult = window.roamAlphaAPI.data.q(`
+        [:find ?uid
+         :where [?p :block/uid "${pageUid}"]
+                [?b :block/page ?p]
+                [?b :block/string "📥 Bandeja de Entrada (Presets nuevos)"]
+                [?b :block/uid ?uid]]
+      `);
+      
+      let inboxUid;
+      if (qResult && qResult.length > 0) {
+        inboxUid = qResult[0][0];
+      } else {
+        inboxUid = generateUID();
+        window.roamAlphaAPI.createBlock({
+          location: {
+            "parent-uid": pageUid,
+            order: 0
+          },
+          block: {
+            string: "📥 Bandeja de Entrada (Presets nuevos)",
+            uid: inboxUid
+          }
+        });
+      }
+      return { pageUid, inboxUid };
+    };
+
+    // Migration of legacy presets to the Index Page
+    const migratePresetsToIndexPage = () => {
+      try {
+        const migrationDone = readGraphSetting('presetsMigratedToIndex', false);
+        if (migrationDone) return;
+        
+        const oldPresets = getSavedPresets();
+        if (!oldPresets || oldPresets.length === 0) {
+          writeGraphSetting('presetsMigratedToIndex', true, false);
+          return;
+        }
+        
+        const pageTitle = getIndexPageTitle();
+        const { inboxUid } = createPageAndInboxIfNeeded(pageTitle);
+        
+        // Loop backwards to preserve order (inserting at order: 0)
+        for (let i = oldPresets.length - 1; i >= 0; i--) {
+          const preset = oldPresets[i];
+          const presetUid = generateUID();
+          
+          window.roamAlphaAPI.createBlock({
+            location: {
+              "parent-uid": inboxUid,
+              order: 0
+            },
+            block: {
+              string: `**${preset.name}**`,
+              uid: presetUid
+            }
+          });
+          
+          preset.blockUids.forEach((uid, index) => {
+            window.roamAlphaAPI.createBlock({
+              location: {
+                "parent-uid": presetUid,
+                order: index
+              },
+              block: {
+                string: `((${uid}))`,
+                uid: generateUID()
+              }
+            });
+          });
+        }
+        
+        writeGraphSetting('presetsMigratedToIndex', true, false);
+        writeGraphSetting('presets', [], []);
+        if (cachedPresets) cachedPresets = [];
+        console.log("Presets successfully migrated to the index page.");
+      } catch (e) {
+        console.error("Error migrating presets:", e);
+      }
     };
 
     const getMarkdownForUids = async (uids, includeAncestors = false) => {
@@ -2529,471 +2864,257 @@ const promptUnifiedExport = (pageName, pageUid) => {
       return allSections.join('\n\n');
     };
 
-    // Dialog for saving preset
-    const showPresetSaveDialog = (uids, pName, pUid) => {
-      const dialogOverlay = document.createElement('div');
-      dialogOverlay.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.4);
-        z-index: 10005;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
+    // Selection state for Index Tree
+    let selectedIndexNodeUid = null;
+    let selectedIndexNodeUids = [];
+    let selectedIndexNodeName = '';
 
-      const dialog = document.createElement('div');
-      dialog.style.cssText = `
-        background: white;
-        padding: 20px;
-        border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        width: 380px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      `;
-
-      const count = uids.length;
-      
-      dialog.innerHTML = `
-        <div style="font-weight: bold; font-size: 15px; color: #333;">Guardar Selección como Preset</div>
-        <div style="font-size: 13px; color: #666;">Se guardarán ${count} bloques seleccionados de "${pName}".</div>
-        <div>
-          <label style="display: block; font-size: 12px; color: #555; margin-bottom: 4px;">Nombre del Preset:</label>
-          <input type="text" id="preset-name-input" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px;" placeholder="Ej: Resumen del Libro...">
-        </div>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
-          <button id="preset-dialog-cancel" style="padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Cancelar</button>
-          <button id="preset-dialog-save" style="padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; background: #28a745; color: white; cursor: pointer;">Guardar</button>
-        </div>
-      `;
-
-      dialogOverlay.appendChild(dialog);
-      modal.appendChild(dialogOverlay);
-
-      const nameInput = dialogOverlay.querySelector('#preset-name-input');
-      nameInput.focus();
-
-      const close = () => {
-        if (dialogOverlay.parentNode) {
-          dialogOverlay.parentNode.removeChild(dialogOverlay);
-        }
-      };
-
-      dialogOverlay.querySelector('#preset-dialog-cancel').addEventListener('click', close);
-
-      const doSave = () => {
-        const name = nameInput.value.trim();
-        if (!name) {
-          nameInput.style.borderColor = '#DC143C';
-          nameInput.focus();
-          return;
-        }
-
-        let preview = '';
-        try {
-          const firstUid = uids[0];
-          const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', firstUid]);
-          if (blockData && blockData[':block/string']) {
-            const cleanStr = blockData[':block/string'].trim().replace(/[\[\]]/g, '');
-            preview = cleanStr.substring(0, 45) + (cleanStr.length > 45 ? '...' : '');
-          }
-        } catch (e) {
-          console.error("Error pulling block preview", e);
-        }
-
-        const description = `${count} bloques` + (preview ? ` ("${preview}")` : '');
-
-        const newPreset = {
-          id: 'preset_' + Date.now(),
-          name,
-          description,
-          createdAt: new Date().toISOString(),
-          pageTitle: pName,
-          pageUid: pUid,
-          blockUids: [...uids],
-          blockCount: count
-        };
-
-        const presets = getSavedPresets();
-        presets.unshift(newPreset);
-        savePresets(presets);
-
-        close();
-        showNotification(`✓ Preset "${name}" guardado con éxito`, '#28a745');
-      };
-
-      dialogOverlay.querySelector('#preset-dialog-save').addEventListener('click', doSave);
-      nameInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') doSave();
-        if (e.key === 'Escape') close();
-      });
-    };
-
-    // Dialog for renaming preset
-    const showPresetRenameDialog = (preset) => {
-      const dialogOverlay = document.createElement('div');
-      dialogOverlay.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0,0,0,0.4);
-        z-index: 10005;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      `;
-
-      const dialog = document.createElement('div');
-      dialog.style.cssText = `
-        background: white;
-        padding: 20px;
-        border-radius: 6px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        width: 380px;
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      `;
-
-      dialog.innerHTML = `
-        <div style="font-weight: bold; font-size: 15px; color: #333;">Renombrar Preset</div>
-        <div>
-          <label style="display: block; font-size: 12px; color: #555; margin-bottom: 4px;">Nombre del Preset:</label>
-          <input type="text" id="preset-rename-input" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px;" placeholder="Ej: Resumen del Libro...">
-        </div>
-        <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px;">
-          <button id="preset-rename-cancel" style="padding: 6px 12px; font-size: 13px; border: 1px solid #ccc; border-radius: 4px; background: white; cursor: pointer;">Cancelar</button>
-          <button id="preset-rename-save" style="padding: 6px 12px; font-size: 13px; border: none; border-radius: 4px; background: #28a745; color: white; cursor: pointer;">Renombrar</button>
-        </div>
-      `;
-
-      dialogOverlay.appendChild(dialog);
-      modal.appendChild(dialogOverlay);
-
-      const nameInput = dialogOverlay.querySelector('#preset-rename-input');
-      nameInput.value = preset.name;
-      nameInput.focus();
-      nameInput.select();
-
-      const close = () => {
-        if (dialogOverlay.parentNode) {
-          dialogOverlay.parentNode.removeChild(dialogOverlay);
-        }
-      };
-
-      dialogOverlay.querySelector('#preset-rename-cancel').addEventListener('click', close);
-
-      const doRename = () => {
-        const newName = nameInput.value.trim();
-        if (!newName) {
-          nameInput.style.borderColor = '#DC143C';
-          nameInput.focus();
-          return;
-        }
-
-        const presets = getSavedPresets();
-        const index = presets.findIndex(p => p.id === preset.id);
-        if (index !== -1) {
-          presets[index].name = newName;
-          savePresets(presets);
-          showNotification(`✓ Preset renombrado a "${newName}"`, '#28a745');
-          renderPresetsList();
-          if (selectedPresetId === preset.id) {
-            selectPreset(preset.id);
-          }
-        }
-        close();
-      };
-
-      dialogOverlay.querySelector('#preset-rename-save').addEventListener('click', doRename);
-      nameInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') doRename();
-        if (e.key === 'Escape') close();
-      });
-    };
-
-    // Selection state for presets
-    let selectedPresetId = null;
-
-    const selectPreset = (id) => {
-      selectedPresetId = id;
-      const presets = getSavedPresets();
-      const preset = presets.find(p => p.id === id);
-      if (!preset) return;
+    const selectIndexNode = (uid, nodeTree) => {
+      selectedIndexNodeUid = uid;
+      selectedIndexNodeUids = getBlockRefsInTree(nodeTree);
+      selectedIndexNodeName = nodeTree.content.replace(/\(\([\w-]{9}\)\)/g, '').trim() || uid;
 
       const infoSpan = document.getElementById('presets-selection-info');
       if (infoSpan) {
-        infoSpan.textContent = `Seleccionado: ${preset.name}`;
+        infoSpan.textContent = `Seleccionado: ${selectedIndexNodeName.substring(0, 30)}${selectedIndexNodeName.length > 30 ? '...' : ''} (${selectedIndexNodeUids.length} refs)`;
         infoSpan.style.color = '#137cbd';
         infoSpan.style.fontWeight = '600';
       }
 
       const container = document.getElementById('presets-list-container');
       if (container) {
-        container.querySelectorAll('.preset-item').forEach(item => {
-          if (item.dataset.id === id) {
-            item.style.borderColor = '#137CBD';
-            item.style.background = '#f0f7ff';
+        container.querySelectorAll('.index-node-content-row').forEach(row => {
+          if (row.dataset.uid === uid) {
+            row.style.background = '#f0f7ff';
+            row.style.borderColor = '#137CBD';
+            row.dataset.selected = 'true';
           } else {
-            item.style.borderColor = '#e2e8f0';
-            item.style.background = 'white';
+            row.style.background = 'transparent';
+            row.style.borderColor = 'transparent';
+            row.dataset.selected = 'false';
           }
         });
       }
 
-      ['toolbar-copy-text', 'toolbar-copy-uids', 'toolbar-load', 'toolbar-rename', 'toolbar-merge'].forEach(btnId => {
+      ['toolbar-copy-text', 'toolbar-copy-uids', 'toolbar-load'].forEach(btnId => {
         const btn = document.getElementById(btnId);
         if (btn) {
-          if (btnId === 'toolbar-merge') {
-            const isSamePage = preset.pageUid === pageUid;
-            if (isSamePage) {
-              btn.style.opacity = '1';
-              btn.style.pointerEvents = 'auto';
-              btn.style.cursor = 'pointer';
-              btn.style.background = 'white';
-              btn.style.color = '#722ed1';
-              btn.style.borderColor = '#722ed1';
-              btn.removeAttribute('disabled');
-              btn.removeAttribute('title');
-            } else {
-              btn.style.opacity = '0.5';
-              btn.style.pointerEvents = 'none';
-              btn.style.cursor = 'not-allowed';
-              btn.style.background = '#f5f5f5';
-              btn.style.color = '#bfbfbf';
-              btn.style.borderColor = '#d9d9d9';
-              btn.setAttribute('disabled', 'true');
-              btn.setAttribute('title', `Solo se puede fusionar desde la página de origen del preset (${preset.pageTitle})`);
-            }
-          } else {
+          if (selectedIndexNodeUids.length > 0) {
             btn.style.opacity = '1';
             btn.style.pointerEvents = 'auto';
             btn.style.cursor = 'pointer';
+          } else {
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+            btn.style.cursor = 'default';
           }
         }
       });
     };
 
-    const deselectPreset = () => {
-      selectedPresetId = null;
+    const deselectIndexNode = () => {
+      selectedIndexNodeUid = null;
+      selectedIndexNodeUids = [];
+      selectedIndexNodeName = '';
 
       const infoSpan = document.getElementById('presets-selection-info');
       if (infoSpan) {
-        infoSpan.textContent = 'Selecciona un preset de la lista';
+        infoSpan.textContent = 'Selecciona un nodo del índice';
         infoSpan.style.color = '#8a9ba8';
         infoSpan.style.fontWeight = 'normal';
       }
 
       const container = document.getElementById('presets-list-container');
       if (container) {
-        container.querySelectorAll('.preset-item').forEach(item => {
-          item.style.borderColor = '#e2e8f0';
-          item.style.background = 'white';
+        container.querySelectorAll('.index-node-content-row').forEach(row => {
+          row.style.background = 'transparent';
+          row.style.borderColor = 'transparent';
+          row.dataset.selected = 'false';
         });
       }
 
-      ['toolbar-copy-text', 'toolbar-copy-uids', 'toolbar-load', 'toolbar-rename', 'toolbar-merge'].forEach(btnId => {
+      ['toolbar-copy-text', 'toolbar-copy-uids', 'toolbar-load'].forEach(btnId => {
         const btn = document.getElementById(btnId);
         if (btn) {
           btn.style.opacity = '0.5';
           btn.style.pointerEvents = 'none';
           btn.style.cursor = 'default';
-          if (btnId === 'toolbar-merge') {
-            btn.style.background = 'white';
-            btn.style.color = '#722ed1';
-            btn.style.borderColor = '#722ed1';
-            btn.removeAttribute('disabled');
-            btn.removeAttribute('title');
-          }
         }
       });
     };
 
-    // Render presets list
-    const renderPresetsList = () => {
-      const container = document.getElementById('presets-list-container');
-      const presets = getSavedPresets();
+    // Render tree representation of Index Page
+    const renderIndexTree = (nodes, indentLevel = 0) => {
+      if (!nodes || nodes.length === 0) return indentLevel === 0 ? '<p style="color: #888; padding: 12px;">No hay bloques en esta página</p>' : '';
+      return nodes.map(node => {
+        // Skip completely empty blocks with no kids
+        if (!node.content.trim() && (!node.children || node.children.length === 0)) return '';
+        
+        const hasChildren = (node.children && node.children.length > 0);
+        const countUids = countBlockRefsInTree(node);
+        const refInfo = countUids > 0 ? ` <span class="index-ref-info" style="color: #28a745; font-size: 11px; font-weight: bold;">(${countUids} refs)</span>` : '';
 
-      if (presets.length === 0) {
-        container.innerHTML = `
-          <div style="text-align: center; color: #999; padding: 40px 20px; font-size: 14px;">
-            No tienes presets guardados todavía.<br>
-            Ve a la pestaña <b>🌳 Por Ramas</b>, selecciona bloques y haz clic en <b>💾 Guardar Preset</b>.
-          </div>
-        `;
-        deselectPreset();
-        return;
-      }
+        const toggleBtn = hasChildren
+          ? `<span class="index-tree-toggle" data-uid="${node.uid}" style="cursor: pointer; width: 16px; display: inline-flex; justify-content: center; align-items: center; color: #888; font-size: 11px; user-select: none; flex-shrink: 0; padding-top: 4px; transition: transform 0.2s;" title="Expandir/Colapsar">▶</span>`
+          : `<span style="width: 16px; display: inline-block; flex-shrink: 0;"></span>`;
 
-      container.innerHTML = presets.map(preset => {
-        const dateStr = new Date(preset.createdAt).toLocaleDateString(undefined, {
-          day: 'numeric', month: 'short', year: 'numeric'
-        });
-        const isSelected = preset.id === selectedPresetId;
+        const childrenHtml = hasChildren
+          ? `<div class="index-tree-children" data-parent-uid="${node.uid}" style="display: none; padding-left: 20px;">
+               ${renderIndexTree(node.children, indentLevel + 1)}
+             </div>`
+          : '';
+
+        const isSelected = node.uid === selectedIndexNodeUid;
+        const cleanContent = node.content.replace(/\(\([\w-]{9}\)\)/g, '').trim() || `(Bloque: ${node.uid})`;
+
         return `
-          <div class="preset-item" data-id="${preset.id}" draggable="true" style="
-            border: 1px solid ${isSelected ? '#137CBD' : '#e2e8f0'};
-            border-radius: 6px;
-            padding: 10px 14px;
-            background: ${isSelected ? '#f0f7ff' : 'white'};
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.15s;
-            position: relative;
-            user-select: none;
-          " onmouseover="if('${preset.id}'!=='${selectedPresetId}') { this.style.borderColor='#cbd5e1'; this.style.boxShadow='0 2px 4px rgba(0,0,0,0.05)'; }" onmouseout="if('${preset.id}'!=='${selectedPresetId}') { this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'; }">
-            <div class="preset-drag-handle" style="
-              cursor: grab;
-              padding: 2px 6px;
-              color: #a0aec0;
-              font-size: 16px;
-              user-select: none;
-            " onmouseover="this.style.color='#718096';" onmouseout="this.style.color='#a0aec0';" title="Arrastra para reordenar">⠿</div>
-            <div style="flex: 1; min-width: 0;">
-              <div style="font-weight: 600; font-size: 14px; color: #2d3748; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 24px;">📌 ${preset.name}</div>
-              <div style="font-size: 12px; color: #718096; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 24px;">
-                ${preset.description} &middot; Origen: <b>${preset.pageTitle}</b> &middot; ${dateStr}
+          <div class="index-tree-node" style="padding: 2px 0;" data-level="${indentLevel}" data-uid="${node.uid}">
+            <div style="display: flex; align-items: flex-start; gap: 4px;">
+              ${toggleBtn}
+              <div class="index-node-content-row" data-uid="${node.uid}" style="
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                flex: 1;
+                cursor: pointer;
+                padding: 2px 6px;
+                border-radius: 4px;
+                background: ${isSelected ? '#f0f7ff' : 'transparent'};
+                border: 1px solid ${isSelected ? '#137cbd' : 'transparent'};
+              " onmouseover="if(this.dataset.selected!=='true') this.style.background='rgba(0,0,0,0.03)'" onmouseout="if(this.dataset.selected!=='true') this.style.background='transparent'">
+                <span class="index-node-text" style="font-size: 13px; color: #333; font-weight: ${indentLevel === 0 ? '600' : 'normal'};">
+                  ${cleanContent}
+                </span>
+                ${refInfo}
               </div>
             </div>
-            <button class="delete-preset-btn" data-id="${preset.id}" style="
-              position: absolute;
-              top: 10px;
-              right: 10px;
-              background: none;
-              border: none;
-              color: #a0aec0;
-              cursor: pointer;
-              font-size: 16px;
-              padding: 4px 8px;
-              line-height: 1;
-              border-radius: 4px;
-            " onmouseover="this.style.color='#e53e3e'; this.style.background='#fff5f5';" onmouseout="this.style.color='#a0aec0'; this.style.background='none';">✕</button>
+            ${childrenHtml}
           </div>
         `;
       }).join('');
+    };
 
-      // Add event listeners for preset list items
-      container.querySelectorAll('.preset-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-          const id = item.dataset.id;
-          if (selectedPresetId === id) {
-            deselectPreset();
-          } else {
-            selectPreset(id);
-          }
-        });
-      });
+    // Main render function for Index list container
+    const renderIndexList = () => {
+      const container = document.getElementById('presets-list-container');
+      if (!container) return;
 
-      container.querySelectorAll('.delete-preset-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+      const pageTitle = getIndexPageTitle();
+      const indexTree = getIndexPageTree(pageTitle);
+
+      if (!indexTree || !indexTree.children || indexTree.children.length === 0) {
+        container.innerHTML = `
+          <div style="text-align: center; color: #999; padding: 40px 20px; font-size: 13px;">
+            La página de índice <b>"${pageTitle}"</b> no existe o está vacía.<br>
+            Créala en Roam, configúrala arriba o guarda selecciones desde la pestaña <b>🌳 Por Ramas</b>.
+          </div>
+        `;
+        deselectIndexNode();
+        return;
+      }
+
+      container.innerHTML = renderIndexTree(indexTree.children);
+
+      // Add click handler for selecting/deselecting node
+      container.querySelectorAll('.index-node-content-row').forEach(row => {
+        row.addEventListener('click', (e) => {
           e.stopPropagation();
-          const id = btn.dataset.id;
-          const name = presets.find(p => p.id === id)?.name || '';
-          if (confirm(`¿Estás seguro de que quieres eliminar el preset "${name}"?`)) {
-            const updated = getSavedPresets().filter(p => p.id !== id);
-            savePresets(updated);
-            if (selectedPresetId === id) {
-              deselectPreset();
-            }
-            renderPresetsList();
-            showNotification('Preset eliminado', '#718096');
-          }
-        });
-      });
-
-      // Drag & Drop reordering listeners
-      let draggedPresetId = null;
-
-      const resetPresetBorders = () => {
-        container.querySelectorAll('.preset-item').forEach(item => {
-          item.style.borderTop = '1px solid #e2e8f0';
-          item.style.borderBottom = '1px solid #e2e8f0';
-        });
-      };
-
-      container.querySelectorAll('.preset-item').forEach(item => {
-        item.addEventListener('dragstart', (e) => {
-          draggedPresetId = item.dataset.id;
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', item.dataset.id);
-          // Set opacity asynchronously so the drag ghost image remains opaque
-          setTimeout(() => {
-            item.style.opacity = '0.4';
-          }, 0);
-        });
-
-        item.addEventListener('dragover', (e) => {
-          e.preventDefault();
-          e.dataTransfer.dropEffect = 'move';
-
-          const rect = item.getBoundingClientRect();
-          const relY = e.clientY - rect.top;
-          const isAfter = relY > rect.height / 2;
-
-          resetPresetBorders();
-
-          if (isAfter) {
-            item.style.borderBottom = '3px solid #137cbd';
+          const uid = row.dataset.uid;
+          if (selectedIndexNodeUid === uid) {
+            deselectIndexNode();
           } else {
-            item.style.borderTop = '3px solid #137cbd';
+            const findNodeInTree = (nodes, targetUid) => {
+              for (const n of nodes) {
+                if (n.uid === targetUid) return n;
+                if (n.children && n.children.length > 0) {
+                  const found = findNodeInTree(n.children, targetUid);
+                  if (found) return found;
+                }
+              }
+              return null;
+            };
+            const nodeTree = findNodeInTree(indexTree.children, uid);
+            if (nodeTree) {
+              selectIndexNode(uid, nodeTree);
+            }
           }
-        });
-
-        item.addEventListener('dragend', () => {
-          item.style.opacity = '';
-          resetPresetBorders();
-          draggedPresetId = null;
-        });
-
-        item.addEventListener('drop', (e) => {
-          e.preventDefault();
-          resetPresetBorders();
-
-          const targetId = item.dataset.id;
-          if (!draggedPresetId || draggedPresetId === targetId) return;
-
-          const rect = item.getBoundingClientRect();
-          const relY = e.clientY - rect.top;
-          const isAfter = relY > rect.height / 2;
-
-          const currentPresets = getSavedPresets();
-          const fromIndex = currentPresets.findIndex(p => p.id === draggedPresetId);
-          if (fromIndex === -1) return;
-
-          const [draggedPreset] = currentPresets.splice(fromIndex, 1);
-          
-          let toIndex = currentPresets.findIndex(p => p.id === targetId);
-          if (toIndex === -1) return;
-
-          if (isAfter) {
-            toIndex += 1;
-          }
-
-          currentPresets.splice(toIndex, 0, draggedPreset);
-          savePresets(currentPresets);
-          renderPresetsList();
-          if (selectedPresetId) {
-            selectPreset(selectedPresetId);
-          }
-          showNotification('Orden de presets actualizado', '#137cbd');
         });
       });
+
+      // Bind expand/collapse events
+      container.querySelectorAll('.index-tree-toggle').forEach(toggle => {
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const uid = toggle.dataset.uid;
+          const nodeRow = toggle.closest('.index-tree-node');
+          const childrenDiv = nodeRow.querySelector(`.index-tree-children[data-parent-uid="${uid}"]`);
+          if (childrenDiv) {
+            const isExpanded = childrenDiv.style.display !== 'none';
+            childrenDiv.style.display = isExpanded ? 'none' : 'block';
+            toggle.textContent = isExpanded ? '▶' : '▼';
+          }
+        });
+      });
+    };
+
+    // Modular function to select blocks in the active page tree
+    const loadSelectionDirectly = (blockUids) => {
+      switchTab('branches');
+      treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
+        cb.checked = false;
+        cb.indeterminate = false;
+      });
+
+      let markedCount = 0;
+      blockUids.forEach(uid => {
+        const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
+        if (cb) {
+          cb.checked = true;
+          markedCount++;
+          
+          const container = cb.closest('.tree-node');
+          if (container) {
+            const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
+            descendantCheckboxes.forEach(childCb => {
+              childCb.checked = true;
+              childCb.indeterminate = false;
+            });
+
+            let parentContainer = container.parentElement.closest('.tree-node');
+            while (parentContainer) {
+              const parentCb = parentContainer.querySelector('.branch-checkbox');
+              if (parentCb) {
+                const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
+                if (allDescendants.length > 0) {
+                  const allChecked = allDescendants.every(c => c.checked);
+                  const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
+                  if (allChecked) {
+                    parentCb.checked = true;
+                    parentCb.indeterminate = false;
+                  } else if (someChecked) {
+                    parentCb.checked = false;
+                    parentCb.indeterminate = true;
+                  } else {
+                    parentCb.checked = false;
+                    parentCb.indeterminate = false;
+                  }
+                }
+              }
+              parentContainer = parentContainer.parentElement.closest('.tree-node');
+            }
+          }
+        }
+      });
+
+      updateBranchCount();
+      updateSelectAllLabel();
+      showNotification(`✓ Cargados ${markedCount} de ${blockUids.length} bloques`, '#28a745');
     };
 
     // Tab switching
     const pageNameDisplay = document.getElementById('page-name-display');
     const switchTab = (tab) => {
       activeTab = tab;
-      // Reset all tabs
       tabBranches.style.cssText = tabStyle(false);
       tabPages.style.cssText = tabStyle(false);
       tabPresets.style.cssText = tabStyle(false);
@@ -3029,7 +3150,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
         copyBtn.style.display = 'none';
         copyUidsBtn.style.display = 'none';
         exportBtn.style.display = 'none';
-        renderPresetsList();
+        renderIndexList();
       }
     };
 
@@ -3037,25 +3158,55 @@ const promptUnifiedExport = (pageName, pageUid) => {
     tabPages.addEventListener('click', () => switchTab('pages'));
     tabPresets.addEventListener('click', () => switchTab('presets'));
 
+    // Configure Index Page Title Inputs
+    const indexPageTitleInput = document.getElementById('index-page-title-input');
+    const indexPageTitleSave = document.getElementById('index-page-title-save');
+    const openIndexPageBtn = document.getElementById('open-index-page-btn');
+
+    if (indexPageTitleInput && indexPageTitleSave) {
+      indexPageTitleInput.value = getIndexPageTitle();
+      indexPageTitleSave.addEventListener('click', () => {
+        const newTitle = indexPageTitleInput.value.trim();
+        if (!newTitle) {
+          alert("El nombre de la página no puede estar vacío.");
+          return;
+        }
+        setIndexPageTitle(newTitle);
+        showNotification(`✓ Página configurada a "${newTitle}"`, '#28a745');
+        renderIndexList();
+      });
+    }
+
+    if (openIndexPageBtn) {
+      openIndexPageBtn.addEventListener('click', () => {
+        const title = getIndexPageTitle();
+        let pageUid = getPageUidByTitle(title);
+        if (!pageUid) {
+          const { pageUid: newUid } = createPageAndInboxIfNeeded(title);
+          pageUid = newUid;
+        }
+        if (window.roamAlphaAPI && window.roamAlphaAPI.ui && window.roamAlphaAPI.ui.mainWindow) {
+          window.roamAlphaAPI.ui.mainWindow.openPage({ page: { uid: pageUid } });
+          cleanup(true);
+        }
+      });
+    }
+
     // Toolbar action: Copiar Texto
     const tbCopyText = document.getElementById('toolbar-copy-text');
     if (tbCopyText) {
       tbCopyText.addEventListener('click', async () => {
-        if (!selectedPresetId) return;
-        const presets = getSavedPresets();
-        const preset = presets.find(p => p.id === selectedPresetId);
-        if (!preset) return;
-
+        if (selectedIndexNodeUids.length === 0) return;
         showNotification('Procesando bloques...', '#137CBD');
         try {
-          const markdown = await getMarkdownForUids(preset.blockUids, includeAncestorsEnabled.checked);
+          const markdown = await getMarkdownForUids(selectedIndexNodeUids, includeAncestorsEnabled.checked);
           if (!markdown) {
             showNotification('⚠️ Bloques vacíos o ya no existen', '#e0a800');
             return;
           }
           if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(markdown)
-              .then(() => showNotification(`✓ Texto copiado (${preset.blockUids.length} bloques)`, '#28a745'))
+              .then(() => showNotification(`✓ Texto copiado (${selectedIndexNodeUids.length} bloques)`, '#28a745'))
               .catch(() => showNotification('✗ Error al copiar', '#DC143C'));
           }
         } catch (e) {
@@ -3069,16 +3220,13 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const tbCopyUids = document.getElementById('toolbar-copy-uids');
     if (tbCopyUids) {
       tbCopyUids.addEventListener('click', () => {
-        if (!selectedPresetId) return;
-        const presets = getSavedPresets();
-        const preset = presets.find(p => p.id === selectedPresetId);
-        if (!preset) return;
+        if (selectedIndexNodeUids.length === 0) return;
         
         let uidText;
         if (includeAncestorsEnabled.checked) {
           const allLines = [];
-          for (let idx = 0; idx < preset.blockUids.length; idx++) {
-            const uid = preset.blockUids[idx];
+          for (let idx = 0; idx < selectedIndexNodeUids.length; idx++) {
+            const uid = selectedIndexNodeUids[idx];
             const ancestors = getOrderedBlockAncestors(uid);
             let indent = '';
             for (const anc of ancestors) {
@@ -3086,17 +3234,17 @@ const promptUnifiedExport = (pageName, pageUid) => {
               indent += '  ';
             }
             allLines.push(`${indent}((${uid}))`);
-            if (idx < preset.blockUids.length - 1) {
+            if (idx < selectedIndexNodeUids.length - 1) {
               allLines.push('');
             }
           }
           uidText = allLines.join('\n');
         } else {
-          uidText = preset.blockUids.map(uid => `((${uid}))`).join('\n');
+          uidText = selectedIndexNodeUids.map(uid => `((${uid}))`).join('\n');
         }
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(uidText)
-            .then(() => showNotification(`✓ ${preset.blockUids.length} UIDs copiados`, '#28a745'))
+            .then(() => showNotification(`✓ ${selectedIndexNodeUids.length} UIDs copiados`, '#28a745'))
             .catch(() => showNotification('✗ Error al copiar UIDs', '#DC143C'));
         }
       });
@@ -3106,71 +3254,58 @@ const promptUnifiedExport = (pageName, pageUid) => {
     const tbLoad = document.getElementById('toolbar-load');
     if (tbLoad) {
       tbLoad.addEventListener('click', async () => {
-        if (!selectedPresetId) return;
-        const presets = getSavedPresets();
-        const preset = presets.find(p => p.id === selectedPresetId);
-        if (!preset) return;
+        if (selectedIndexNodeUids.length === 0) return;
+        
+        const pagesMap = getPagesForBlockUids(selectedIndexNodeUids);
+        const pageUids = Object.keys(pagesMap);
+        
+        if (pageUids.length === 0) {
+          alert("No se encontraron bloques originales válidos para estas referencias.");
+          return;
+        }
 
-        if (preset.pageUid === pageUid) {
-          switchTab('branches');
-          treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
-            cb.checked = false;
-            cb.indeterminate = false;
-          });
-
-          let markedCount = 0;
-          preset.blockUids.forEach(uid => {
-            const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
-            if (cb) {
-              cb.checked = true;
-              markedCount++;
-              
-              const container = cb.closest('.tree-node');
-              if (container) {
-                const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
-                descendantCheckboxes.forEach(childCb => {
-                  childCb.checked = true;
-                  childCb.indeterminate = false;
-                });
-
-                let parentContainer = container.parentElement.closest('.tree-node');
-                while (parentContainer) {
-                  const parentCb = parentContainer.querySelector('.branch-checkbox');
-                  if (parentCb) {
-                    const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
-                    if (allDescendants.length > 0) {
-                      const allChecked = allDescendants.every(c => c.checked);
-                      const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
-                      if (allChecked) {
-                        parentCb.checked = true;
-                        parentCb.indeterminate = false;
-                      } else if (someChecked) {
-                        parentCb.checked = false;
-                        parentCb.indeterminate = true;
-                      } else {
-                        parentCb.checked = false;
-                        parentCb.indeterminate = false;
-                      }
-                    }
-                  }
-                  parentContainer = parentContainer.parentElement.closest('.tree-node');
-                }
-              }
-            }
-          });
-
-          updateBranchCount();
-          updateSelectAllLabel();
-          showNotification(`✓ Cargados ${markedCount} de ${preset.blockUids.length} bloques`, '#28a745');
+        let targetPageUid = null;
+        if (pageUids.length === 1) {
+          targetPageUid = pageUids[0];
         } else {
-          if (confirm(`Este preset es de la página "${preset.pageTitle}". ¿Quieres navegar a esa página para cargarlo?`)) {
-            cleanup();
+          const pageOptions = [];
+          for (const pUid of pageUids) {
+            const pageInfo = window.roamAlphaAPI.pull('[:node/title]', [':block/uid', pUid]);
+            const title = pageInfo ? pageInfo[':node/title'] : pUid;
+            pageOptions.push({ uid: pUid, title: title, count: pagesMap[pUid].length });
+          }
+          
+          const optionsText = pageOptions.map((opt, index) => `${index + 1}. "${opt.title}" (${opt.count} bloques)`).join('\n');
+          const response = prompt(
+            `Se encontraron referencias de ${pageUids.length} páginas distintas:\n\n${optionsText}\n\nEscribe el número de la página que deseas cargar:`,
+            "1"
+          );
+          
+          if (response === null) return;
+          const selectedIndex = parseInt(response.trim(), 10) - 1;
+          if (isNaN(selectedIndex) || selectedIndex < 0 || selectedIndex >= pageOptions.length) {
+            alert("Selección inválida.");
+            return;
+          }
+          targetPageUid = pageOptions[selectedIndex].uid;
+        }
+
+        const targetBlockUids = pagesMap[targetPageUid];
+
+        if (targetPageUid === pageUid) {
+          loadSelectionDirectly(targetBlockUids);
+        } else {
+          const pageInfo = window.roamAlphaAPI.pull('[:node/title]', [':block/uid', targetPageUid]);
+          const pageTitle = pageInfo ? pageInfo[':node/title'] : targetPageUid;
+          if (confirm(`Los bloques pertenecen a la página "${pageTitle}". ¿Quieres navegar a ella para cargarlos?`)) {
+            cleanup(true);
             if (window.roamAlphaAPI && window.roamAlphaAPI.ui && window.roamAlphaAPI.ui.mainWindow) {
-              window.roamAlphaAPI.ui.mainWindow.openPage({ page: { uid: preset.pageUid } });
+              window.roamAlphaAPI.ui.mainWindow.openPage({ page: { uid: targetPageUid } });
               
               sessionStorage.setItem('roam-export-auto-load-preset', JSON.stringify({
-                presetId: preset.id,
-                pageUid: preset.pageUid
+                blockUids: targetBlockUids,
+                pageUid: targetPageUid,
+                name: selectedIndexNodeName
               }));
 
               setTimeout(() => {
@@ -3179,73 +3314,6 @@ const promptUnifiedExport = (pageName, pageUid) => {
             } else {
               showNotification('No se pudo navegar automáticamente', '#DC143C');
             }
-          }
-        }
-      });
-    }
-
-    // Toolbar action: Renombrar
-    const tbRename = document.getElementById('toolbar-rename');
-    if (tbRename) {
-      tbRename.addEventListener('click', () => {
-        if (!selectedPresetId) return;
-        const presets = getSavedPresets();
-        const preset = presets.find(p => p.id === selectedPresetId);
-        if (preset) {
-          showPresetRenameDialog(preset);
-        }
-      });
-    }
-
-    // Toolbar action: Fusionar
-    const tbMerge = document.getElementById('toolbar-merge');
-    if (tbMerge) {
-      tbMerge.addEventListener('click', () => {
-        if (!selectedPresetId) return;
-        const presets = getSavedPresets();
-        const preset = presets.find(p => p.id === selectedPresetId);
-        if (!preset) return;
-
-        const selectedUids = getSelectedBranchUids();
-        if (selectedUids.length === 0) {
-          alert('Por favor selecciona al menos un bloque en el árbol para fusionar con este preset.');
-          return;
-        }
-
-        const currentUidsSet = new Set(preset.blockUids);
-        const newUids = selectedUids.filter(uid => !currentUidsSet.has(uid));
-
-        if (newUids.length === 0) {
-          showNotification('Todos los bloques seleccionados ya están en este preset', '#e0a800');
-          return;
-        }
-
-        if (confirm(`¿Estás seguro de que quieres añadir ${newUids.length} bloques nuevos al preset "${preset.name}"?`)) {
-          const mergedUids = [...preset.blockUids, ...newUids];
-          
-          let preview = '';
-          try {
-            const firstUid = mergedUids[0];
-            const blockData = window.roamAlphaAPI.pull('[:block/string]', [':block/uid', firstUid]);
-            if (blockData && blockData[':block/string']) {
-              const cleanStr = blockData[':block/string'].trim().replace(/[\[\]]/g, '');
-              preview = cleanStr.substring(0, 45) + (cleanStr.length > 45 ? '...' : '');
-            }
-          } catch (e) {
-            console.error("Error pulling block preview", e);
-          }
-
-          const updatedPresets = getSavedPresets();
-          const idx = updatedPresets.findIndex(p => p.id === preset.id);
-          if (idx !== -1) {
-            updatedPresets[idx].blockUids = mergedUids;
-            updatedPresets[idx].blockCount = mergedUids.length;
-            updatedPresets[idx].description = `${mergedUids.length} bloques` + (preview ? ` ("${preview}")` : '');
-            updatedPresets[idx].createdAt = new Date().toISOString();
-            savePresets(updatedPresets);
-            showNotification(`✓ Se añadieron ${newUids.length} bloques al preset "${preset.name}"`, '#28a745');
-            renderPresetsList();
-            selectPreset(preset.id);
           }
         }
       });
@@ -3277,12 +3345,21 @@ const promptUnifiedExport = (pageName, pageUid) => {
         `;
       });
 
+      // Save currently selected branch UIDs before rebuilding
+      const previouslySelected = new Set(
+        Array.from(treeContainer.querySelectorAll('.branch-checkbox:checked'))
+          .map(cb => cb.dataset.uid)
+      );
+
       // Re-fetch structure with new depth and re-render tree
       structure = getPageStructure(pageUid, currentDepth);
       treeContainer.innerHTML = renderTree(structure);
 
       // Re-attach checkbox listeners
       treeContainer.querySelectorAll('.branch-checkbox').forEach(cb => {
+        if (previouslySelected.has(cb.dataset.uid)) {
+          cb.checked = true;
+        }
         cb.addEventListener('change', (e) => {
           const isChecked = e.target.checked;
           const container = e.target.closest('.tree-node');
@@ -3773,17 +3850,20 @@ const promptUnifiedExport = (pageName, pageUid) => {
 
     // Branch Naming logic
     let branchNamingStrategy = 'block'; // default
+    const getSelectedExt = () => selectedFormat === 'epub' ? '.epub' : '.md';
+
     const updateNamingPreview = () => {
       if (!branchNamingPreview) return;
+      let ext = getSelectedExt();
       let prefix = orderPrefixEnabled.checked ? (orderDescending.checked ? '02_' : '01_') : '';
       let safePage = generatePageFilename(pageName);
       let previewText = '';
       if (branchNamingStrategy === 'block') {
-        previewText = prefix + 'mi_bloque.md';
+        previewText = prefix + 'mi_bloque' + ext;
       } else if (branchNamingStrategy === 'page_block') {
-        previewText = prefix + safePage + '_mi_bloque.md';
+        previewText = prefix + safePage + '_mi_bloque' + ext;
       } else if (branchNamingStrategy === 'page') {
-        previewText = prefix + safePage + '.md';
+        previewText = prefix + safePage + ext;
       }
       branchNamingPreview.textContent = 'Ej: ' + previewText;
     };
@@ -3819,6 +3899,13 @@ const promptUnifiedExport = (pageName, pageUid) => {
     // Initialize preview
     updateNamingPreview();
 
+    const updateMergeFilenamePreview = () => {
+      if (!mergeFilenamePreview) return;
+      const ext = getSelectedExt();
+      const val = mergeFilenameInput.value.trim() || generatePageFilename(pageName) + '_export';
+      mergeFilenamePreview.textContent = 'Ej: ' + val + ext;
+    };
+
     // Merge export toggle - combines all branches into a single file
     mergeExportEnabled.addEventListener('change', () => {
       const isMerge = mergeExportEnabled.checked;
@@ -3845,15 +3932,12 @@ const promptUnifiedExport = (pageName, pageUid) => {
       if (isMerge) {
         // Pre-fill with page name
         mergeFilenameInput.value = generatePageFilename(pageName) + '_export';
-        mergeFilenamePreview.textContent = 'Ej: ' + generatePageFilename(pageName) + '_export.md';
+        updateMergeFilenamePreview();
       }
     });
 
     // Update merge filename preview on input
-    mergeFilenameInput.addEventListener('input', () => {
-      const val = mergeFilenameInput.value.trim() || generatePageFilename(pageName) + '_export';
-      mergeFilenamePreview.textContent = 'Ej: ' + val + '.md';
-    });
+    mergeFilenameInput.addEventListener('input', updateMergeFilenamePreview);
 
     // Order prefix toggle - enables/disables descending option
     orderPrefixEnabled.addEventListener('change', () => {
@@ -4013,23 +4097,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
       btn.addEventListener('click', () => {
         selectedFormat = btn.dataset.format;
         updateFormatButtonStyles();
-        // EPUB always generates a single file, so hide merge option for EPUB
-        if (mergeExportLabel) {
-          if (selectedFormat === 'epub') {
-            mergeExportLabel.style.display = 'none';
-            mergeFilenameContainer.style.display = 'none';
-            mergeExportEnabled.checked = false;
-            // Re-enable naming/order prefix
-            branchNamingSelector.style.opacity = '1';
-            branchNamingSelector.style.pointerEvents = 'auto';
-            branchNamingPreview.style.display = 'block';
-            orderPrefixEnabled.disabled = false;
-            const orderPrefixLabel = document.getElementById('order-prefix-label');
-            if (orderPrefixLabel) orderPrefixLabel.style.opacity = '1';
-          } else {
-            mergeExportLabel.style.display = 'flex';
-          }
-        }
+        updateNamingPreview();
+        updateMergeFilenamePreview();
       });
     });
 
@@ -4070,10 +4139,14 @@ const promptUnifiedExport = (pageName, pageUid) => {
     setupOptionSelector(epubStructureSelector, epubOptions, 'structure');
     setupOptionSelector(mdStructureSelector, mdOptions, 'structure');
 
-    function cleanup() {
-      document.body.removeChild(overlay);
+    function cleanup(skipFocus = false) {
+      if (overlay && overlay.parentNode) {
+        document.body.removeChild(overlay);
+      }
       document.removeEventListener('keydown', handleKeydown);
-      restoreRoamFocus(previousFocus);
+      if (!skipFocus) {
+        restoreRoamFocus(previousFocus);
+      }
     }
 
     const getSelectedBranchUids = () => {
@@ -4245,14 +4318,53 @@ const promptUnifiedExport = (pageName, pageUid) => {
       }
     });
 
-    // Save Preset button click
+    // Save to Index button click
     savePresetBtn.addEventListener('click', () => {
       const selectedUids = getSelectedBranchUids();
       if (selectedUids.length === 0) {
         alert('Por favor selecciona al menos un bloque para guardar.');
         return;
       }
-      showPresetSaveDialog(selectedUids, pageName, pageUid);
+      
+      const presetName = prompt("Escribe el nombre para esta selección en el Índice:", "");
+      if (!presetName || !presetName.trim()) return;
+
+      showNotification('Guardando en tu Índice...', '#137CBD');
+      try {
+        const pageTitle = getIndexPageTitle();
+        const { inboxUid } = createPageAndInboxIfNeeded(pageTitle);
+        
+        const presetUid = generateUID();
+        window.roamAlphaAPI.createBlock({
+          location: {
+            "parent-uid": inboxUid,
+            order: 0
+          },
+          block: {
+            string: `**${presetName.trim()}**`,
+            uid: presetUid
+          }
+        });
+
+        // Add block references as children
+        selectedUids.forEach((uid, index) => {
+          window.roamAlphaAPI.createBlock({
+            location: {
+              "parent-uid": presetUid,
+              order: index
+            },
+            block: {
+              string: `((${uid}))`,
+              uid: generateUID()
+            }
+          });
+        });
+
+        showNotification(`✓ Guardado con éxito en "${pageTitle}"`, '#28a745');
+      } catch (e) {
+        console.error("Error saving selection to index", e);
+        showNotification('❌ Error al guardar en el Índice', '#DC143C');
+      }
     });
 
     // Close on overlay click
@@ -4277,61 +4389,20 @@ const promptUnifiedExport = (pageName, pageUid) => {
       branchSearchInput.focus();
     }
 
+    // Trigger migration of legacy presets to the index page if not done yet
+    migratePresetsToIndexPage();
+
     // Auto-load preset from sessionStorage if navigation happened
     try {
       const autoLoad = JSON.parse(sessionStorage.getItem('roam-export-auto-load-preset') || 'null');
       if (autoLoad && autoLoad.pageUid === pageUid) {
         sessionStorage.removeItem('roam-export-auto-load-preset');
-        const presetId = autoLoad.presetId;
-        setTimeout(() => {
-          const presets = getSavedPresets();
-          const preset = presets.find(p => p.id === presetId);
-          if (preset) {
-            let markedCount = 0;
-            preset.blockUids.forEach(uid => {
-              const cb = treeContainer.querySelector(`.branch-checkbox[data-uid="${uid}"]`);
-              if (cb) {
-                cb.checked = true;
-                markedCount++;
-                
-                const container = cb.closest('.tree-node');
-                if (container) {
-                  const descendantCheckboxes = container.querySelectorAll('.branch-checkbox');
-                  descendantCheckboxes.forEach(childCb => {
-                    childCb.checked = true;
-                    childCb.indeterminate = false;
-                  });
-
-                  let parentContainer = container.parentElement.closest('.tree-node');
-                  while (parentContainer) {
-                    const parentCb = parentContainer.querySelector('.branch-checkbox');
-                    if (parentCb) {
-                      const allDescendants = Array.from(parentContainer.querySelectorAll('.branch-checkbox')).filter(c => c !== parentCb);
-                      if (allDescendants.length > 0) {
-                        const allChecked = allDescendants.every(c => c.checked);
-                        const someChecked = allDescendants.some(c => c.checked || c.indeterminate);
-                        if (allChecked) {
-                          parentCb.checked = true;
-                          parentCb.indeterminate = false;
-                        } else if (someChecked) {
-                          parentCb.checked = false;
-                          parentCb.indeterminate = true;
-                        } else {
-                          parentCb.checked = false;
-                          parentCb.indeterminate = false;
-                        }
-                      }
-                    }
-                    parentContainer = parentContainer.parentElement.closest('.tree-node');
-                  }
-                }
-              }
-            });
-            updateBranchCount();
-            updateSelectAllLabel();
-            showNotification(`✓ Cargados ${markedCount} bloques del preset "${preset.name}"`, '#28a745');
-          }
-        }, 300);
+        const blockUids = autoLoad.blockUids;
+        if (blockUids && blockUids.length > 0) {
+          setTimeout(() => {
+            loadSelectionDirectly(blockUids);
+          }, 300);
+        }
       }
     } catch (e) {
       console.error("Error auto-loading preset:", e);
@@ -4430,18 +4501,109 @@ const unifiedExport = async () => {
 
       // Export based on format
       if (format === 'epub') {
-        // EPUB: Combine all branches into a single EPUB
-        showNotification(`📚 Generando EPUB con ${branchTrees.length} ramas...`, '#137CBD');
+        if (mergeIntoSingle) {
+          // EPUB COMBINADO: Combinar todas las ramas en un solo EPUB con capítulos por rama
+          showNotification(`📚 Generando EPUB combinado con ${branchTrees.length} ramas...`, '#137CBD');
 
-        // Build combined tree for EPUB
-        const combinedTree = branchTrees.map(b => includeAncestors ? wrapWithAncestors(b.tree, b.tree.uid) : b.tree);
-        const title = `${pageName}${filterTag ? ` - ${filterTag}` : ''}`;
+          const chapters = branchTrees.map(({ tree: branchTree }, idx) => {
+            const rootContent = branchTree.content || `Rama ${idx + 1}`;
+            const treeForEpub = includeAncestors ? wrapWithAncestors(branchTree, branchTree.uid) : branchTree;
+            return {
+              title: rootContent,
+              tree: treeForEpub
+            };
+          });
 
-        const success = await downloadAsEpub(combinedTree, title, epubOptions);
-        if (success) {
-          showNotification(`✓ EPUB exportado: ${branchTrees.length} ramas`, '#28a745');
+          const bookTitle = `${pageName}${filterTag ? ` - ${filterTag}` : ''}`;
+
+          try {
+            const blob = await generateMultiChapterEpubBlob(chapters, bookTitle, epubOptions);
+            const rawFilename = mergeFilename || (generatePageFilename(pageName) + '_export');
+            const filename = (rawFilename.endsWith('.epub') ? rawFilename : rawFilename + '.epub');
+
+            downloadBlob(blob, filename);
+            showNotification(`✓ EPUB combinado exportado (${branchTrees.length} ramas)`, '#28a745');
+          } catch (err) {
+            console.error('Error generating combined EPUB:', err);
+            showNotification('❌ Error generando EPUB combinado', '#DC143C');
+          }
         } else {
-          showNotification('❌ Error generando EPUB', '#DC143C');
+          // EPUB INDIVIDUAL: Un archivo EPUB por rama
+          showNotification(`📚 Generando ${branchTrees.length} EPUBs individuales...`, '#137CBD');
+          const files = [];
+
+          for (const { tree: branchTree, orderIndex: idx } of branchTrees) {
+            const rootContent = branchTree.content || 'untitled';
+            const prefixNumber = useDescendingOrder ? (totalForPrefix - idx) : (idx + 1);
+            const prefix = useOrderPrefix ? String(prefixNumber).padStart(2, '0') + '_' : '';
+
+            const safePage = generatePageFilename(pageName);
+            const blockName = generateRootFilename(rootContent);
+            const dateStr = extractDate(rootContent, pageName);
+
+            let baseName = '';
+            if (branchNamingStrategy === 'block') {
+              baseName = `${dateStr}_${blockName}`;
+            } else if (branchNamingStrategy === 'page_block') {
+              baseName = `${safePage}_${dateStr}_${blockName}`;
+            } else if (branchNamingStrategy === 'page') {
+              baseName = `${safePage}_${dateStr}`;
+            }
+
+            let filename = prefix + baseName + '.epub';
+
+            // Collision prevention: If filename already exists, append _2, _3...
+            let counter = 2;
+            while (files.some(f => f.filename === filename)) {
+              filename = prefix + baseName + `_${counter}.epub`;
+              counter++;
+            }
+
+            const treeForEpub = includeAncestors ? wrapWithAncestors(branchTree, branchTree.uid) : branchTree;
+            const epubTitle = rootContent;
+
+            try {
+              const blob = await generateEpubBlob([treeForEpub], epubTitle, epubOptions);
+              files.push({ filename, blob });
+            } catch (err) {
+              console.error(`Error generating EPUB for branch ${filename}:`, err);
+            }
+          }
+
+          if (files.length === 0) {
+            showNotification('❌ Error generando archivos EPUB', '#DC143C');
+            return;
+          }
+
+          if (action === 'copy') {
+            showNotification('❌ No se puede copiar EPUB al portapapeles', '#DC143C');
+          } else if (files.length <= 5) {
+            for (const file of files) {
+              downloadBlob(file.blob, file.filename);
+              await new Promise(resolve => setTimeout(resolve, 300));
+            }
+            showNotification(`✓ Exportados ${files.length} archivos EPUB`, '#28a745');
+          } else {
+            try {
+              const JSZip = await loadJSZip();
+              const zip = new JSZip();
+
+              for (const file of files) {
+                zip.file(sanitizeFilename(file.filename), file.blob);
+              }
+
+              const dateStr = generateDateString(new Date());
+              const safePageName = generatePageFilename(pageName);
+              const zipFilename = `export_${safePageName}_epub_${dateStr}.zip`;
+
+              const zipBlob = await zip.generateAsync({ type: 'blob' });
+              downloadBlob(zipBlob, zipFilename);
+              showNotification(`✓ Exportado ZIP con ${files.length} EPUBs`, '#28a745');
+            } catch (err) {
+              console.error('Error creating EPUB ZIP:', err);
+              showNotification('❌ Error creando ZIP de EPUBs', '#DC143C');
+            }
+          }
         }
       } else if (mergeIntoSingle) {
         // MERGE MODE: Combine all branches into a single Markdown file
@@ -4570,6 +4732,7 @@ const unifiedExport = async () => {
             // Individual downloads
             for (const file of files) {
               downloadFile(file.content, file.filename);
+              await new Promise(resolve => setTimeout(resolve, 300));
             }
             showNotification(`✓ Exportados ${files.length} archivos`, '#28a745');
           } else {
@@ -4704,6 +4867,7 @@ const unifiedExport = async () => {
             } else {
               downloadFile(f.content, f.filename);
             }
+            await new Promise(resolve => setTimeout(resolve, 300));
           }
           showNotification(`✓ Exportado${files.length !== 1 ? 's' : ''} ${files.length} archivo${files.length !== 1 ? 's' : ''}`, '#28a745');
         } else {
@@ -4875,7 +5039,9 @@ const promptForRootExport = (pageName, rootCount, rootBlocks, pageUid) => {
 
     const cleanup = () => {
       clearTimeout(debounceTimer);
-      document.body.removeChild(overlay);
+      if (overlay && overlay.parentNode) {
+        document.body.removeChild(overlay);
+      }
       restoreRoamFocus(previousFocus);
     };
 
@@ -4962,10 +5128,12 @@ const exportByRootBlocks = async () => {
       // Get children (filtered if tag provided)
       const children = getFilteredChildren(rootUid, tagFilter);
 
-      // Skip if filter is active and no matching children
+      // Skip if filter is active and no matching children AND root block doesn't contain tag
       if (tagFilter && children.length === 0) {
-        skippedCount++;
-        continue;
+        if (!contentContainsTag(rootContent, tagFilter)) {
+          skippedCount++;
+          continue;
+        }
       }
 
       // Generate markdown and filename with order prefix
@@ -4974,7 +5142,7 @@ const exportByRootBlocks = async () => {
       const safePageName = generatePageFilename(pageName);
       const dateStr = extractDate(rootContent, pageName);
       // Pad order number - invertOrder: bottom block = 01, otherwise top block = 01
-      const orderNum = invertOrder ? (rootBlocks.length - orderIndex + 1) : orderIndex;
+      const orderNum = invertOrder ? (rootBlocks.length - orderIndex) : (orderIndex + 1);
       const orderPrefix = String(orderNum).padStart(2, '0');
       const filename = `${orderPrefix}_${safePageName}_${dateStr}_${baseFilename}.md`;
       orderIndex++;
@@ -5158,7 +5326,7 @@ const initExtension = () => {
     });
   }
 
-  console.log("Roam Filter Export extension loaded (v2.39.0)");
+  console.log("Roam Filter Export extension loaded (v2.41.0)");
 };
 
 const cleanupExtension = () => {

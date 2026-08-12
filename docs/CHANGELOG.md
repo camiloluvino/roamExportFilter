@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.41.0] - 2026-08-11 22:45
+
+### Added
+- **Exportación EPUB Individual y Combinada (Multi-capítulo)**:
+  - Paridad de funciones entre exportación Markdown y EPUB en la pestaña "Por Ramas".
+  - La opción "Combinar en archivo único" ahora está habilitada para formato EPUB.
+  - Generador EPUB 3.0 multi-capítulo (`generateMultiChapterEpubBlob`): cada rama seleccionada genera un capítulo independiente (`chapterN.xhtml`) con encabezado `<h1>` propio y navegación en la Tabla de Contenidos (`nav.xhtml` y `toc.ncx`).
+  - Exportación EPUB individual por rama con nomenclatura personalizada (`branchNamingStrategy`), prefijo numérico de orden (`useOrderPrefix`) y compresión automática ZIP para conjuntos >5 archivos.
+  - Actualización reactiva de extensiones previsualizadas (`.epub` / `.md`) en los controles de nomenclatura y nombre de archivo combinado.
+
+---
+
 ## [2.40.0] - 2026-07-11 01:00
 
 ### Fixed

@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-07-11 01:00
+> **Última actualización**: 2026-08-11 22:45
 
 ---
 
 ## Versión actual
 
-**2.40.0** (2026-07-11 01:00)
+**2.41.0** (2026-08-11 22:45)
 
 ---
 
@@ -19,13 +19,13 @@
 | **Copy UIDs** | ✅ Estable | Botón "Copiar UIDs" en pie de modal (formato `((uid))`) y referencias de páginas (`[[Página]]`) |
 | **Copy with Ancestors**| ✅ Nuevo | Opción "Incluir ancestros (copiar/exportar)" para copiar o exportar bloques conservando el contexto de los bloques padre |
 | **MD Export** | ✅ Estable | Exporta a Markdown en formato Jerárquico o Plano |
-| **EPUB Export** | ✅ Estable | Exporta a formato EPUB 3.0 con soporte de Markdown |
+| **EPUB Export** | ✅ Mejorado | Exporta a formato EPUB 3.0 (individual o combinado multi-capítulo con TOC) |
 | **Shallow Export** | ✅ Nuevo | Opción "Solo texto visible" para omitir sub-bloques anidados |
 | **Clean Copy** | ✅ Estable | Renombrado a "Copiar Texto" (copia markdown en texto plano sin metadatos) |
 | **Export by Root Blocks** | ✅ Estable | Exporta cada bloque raíz como archivo separado |
 | **ZIP Export (>5 files)** | ✅ Estable | Bundling automático con JSZip |
 | **Custom Naming** | ✅ Estable | Opciones de nomenclatura y prevención de duplicados |
-| **Merge Export** | ✅ Estable | Combina múltiples ramas en un solo archivo Markdown |
+| **Merge Export** | ✅ Estable | Combina múltiples ramas en un solo archivo Markdown o EPUB multi-capítulo |
 
 ---
 
@@ -44,7 +44,16 @@
 
 ## Historial reciente
 
+### v2.41.0 (2026-08-11 22:45)
+- Added: **Exportación EPUB Individual y Combinada (Multi-capítulo)**.
+  - Paridad total entre formatos Markdown y EPUB en la pestaña "Por Ramas".
+  - Opción de "Combinar en archivo único" disponible para EPUB.
+  - Generación de EPUBs multi-capítulo con `generateMultiChapterEpubBlob`, donde cada rama es un capítulo con su propio `<h1>` y entrada en la Tabla de Contenidos (TOC/NCX).
+  - Exportación EPUB individual por rama con nomenclatura personalizada, prefijos de orden y compresión ZIP cuando hay >5 archivos.
+  - Previsualización dinámica de extensiones (`.epub` / `.md`) en las opciones del modal.
+
 ### v2.40.0 (2026-07-11 01:00)
+
 - Cleaned: **Eliminación masiva de código muerto (~800 líneas)**.
   - Removida la lógica obsoleta de "Visual Selection Copy" (atajo `Alt+Shift+C`) ya inactiva.
   - Removida la lógica del antiguo modal de filtrado por tags (`promptForTag`, `exportFilteredContent`, `copyFilteredContent`).
