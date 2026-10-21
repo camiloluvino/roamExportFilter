@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.41.1] - 2026-10-21 04:34
+
+### Fixed
+- **EPUB malformado con apóstrofos y URLs con fragmento**: `roamMarkupToHtml` convertía el `#39` de la entidad `&#39;` en un hashtag (`&<span>#39</span>;`), lo que producía XHTML inválido; también insertaba un `<span>` dentro de `href` con `#fragmento`. La regex de hashtags ya no actúa tras `&`, letras, dígitos, `/` o `=`.
+- **Hashtags con acentos y puntos**: `#textoÍntegro` ya no se corta en `#texto`, y se admiten puntos internos (`#Gemini/Pro/3.0/resumen`) dejando fuera el punto final de una oración.
+- **Texto de bloques sin escapar en el modal**: el contenido de bloques, nombres de páginas, presets y tags favoritos se insertaba crudo en `innerHTML`; ahora pasa por `escapeHTML`, de modo que textos con `<` o HTML se muestran tal cual.
+- **`isRoamAPIAvailable` devuelve booleano** en vez de `null` cuando falta la API.
+
+### Tests
+- **Suite reescrita** (`tests/tests.html`): se eliminaron los tests de funciones removidas en v2.40.0 y se agregaron tests para `getBlockWithDescendants`, `filterTreeByTag`, `contentContainsTag`, `treeToMarkdown`, `roamMarkupToHtml`, `escapeHTML`, `sanitizeFilename`, `sanitizeToCamelCase`, `generateRootFilename`, `generatePageFilename`, `extractDate` y `cleanTagInput`.
+- Corregido un bucle infinito en el mock de `wrapWithAncestors` (`"grandparent-uid"` contiene `parent-uid`) que colgaba la página de tests.
+
+---
+
 ## [2.41.0] - 2026-08-11 22:45
 
 ### Added

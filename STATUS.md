@@ -1,12 +1,12 @@
 # Project Status - Roam Export Filter
 
-> **Última actualización**: 2026-08-11 22:45
+> **Última actualización**: 2026-10-21 04:34
 
 ---
 
 ## Versión actual
 
-**2.41.0** (2026-08-11 22:45)
+**2.41.1** (2026-10-21 04:34)
 
 ---
 
@@ -43,6 +43,11 @@
 ---
 
 ## Historial reciente
+
+### v2.41.1 (2026-10-21 04:34)
+- Fixed: **EPUB válido con apóstrofos y URLs con `#`**, hashtags con acentos y puntos internos.
+- Fixed: **Escape HTML** del texto de bloques, páginas, presets y tags en el modal.
+- Tests: **Suite actualizada** a las funciones actuales (24 tests, todos pasan).
 
 ### v2.41.0 (2026-08-11 22:45)
 - Added: **Exportación EPUB Individual y Combinada (Multi-capítulo)**.

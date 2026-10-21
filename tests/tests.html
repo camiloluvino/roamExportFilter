@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Roam Filter Copy - Unit Tests</title>
+  <title>Roam Export Filter - Unit Tests</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
@@ -61,7 +61,7 @@
   </style>
 </head>
 <body>
-  <h1>Roam Filter Copy - Unit Tests</h1>
+  <h1>Roam Export Filter - Unit Tests</h1>
   <div id="test-results"></div>
   <div id="summary"></div>
 
@@ -136,6 +136,9 @@
 
     // Mock Roam API for testing
     window.roamAlphaAPI = {
+      data: {
+        q: () => []
+      },
       pull: (query, params) => {
         // Mock implementation for testing
         const uid = params[1];
@@ -162,9 +165,10 @@
           'parent-collapsed': {
             ':block/string': 'Parent Collapsed',
             ':block/uid': 'parent-collapsed',
+            ':block/heading': 2,
             ':block/children': [
-              { ':block/uid': 'child-1', ':block/order': 0 },
-              { ':block/uid': 'child-2', ':block/order': 1 }
+              { ':block/uid': 'child-2', ':block/order': 1 },
+              { ':block/uid': 'child-1', ':block/order': 0 }
             ]
           },
           'child-1': {
@@ -200,13 +204,13 @@
     // Run tests
     const runner = new TestRunner();
 
-    // Test 1: isRoamAPIAvailable
+    // isRoamAPIAvailable
     runner.test('isRoamAPIAvailable - should return true when API exists', () => {
       const result = isRoamAPIAvailable();
       assert(result === true, 'API should be available');
     });
 
-    // Test 2: isRoamAPIAvailable with missing API
+    // isRoamAPIAvailable with missing API
     runner.test('isRoamAPIAvailable - should return false when API is missing', () => {
       const originalAPI = window.roamAlphaAPI;
       window.roamAlphaAPI = null;
@@ -215,145 +219,123 @@
       assert(result === false, 'API should not be available');
     });
 
-    // Test 3: getBlockUidFromElement with null
-    runner.test('getBlockUidFromElement - should handle null container', () => {
-      const result = getBlockUidFromElement(null);
-      assert(result === null, 'Should return null for null container');
+    // --- Tree building ---
+    runner.test('getBlockWithDescendants - builds full tree ordered by :block/order', () => {
+      const tree = getBlockWithDescendants('parent-collapsed');
+      assertEqual(tree.content, 'Parent Collapsed');
+      assertEqual(tree.heading, 2);
+      assertEqual(tree.children.length, 2);
+      assertEqual(tree.children[0].uid, 'child-1', 'child-1 (order 0) should come first');
+      assertEqual(tree.children[0].children[0].uid, 'grandchild-1-1');
     });
 
-    // Test 4: getBlockUidFromElement with valid element
-    runner.test('getBlockUidFromElement - should extract UID from element', () => {
-      const div = document.createElement('div');
-      const input = document.createElement('textarea');
-      input.id = 'block-input-test-123-abc';
-      div.appendChild(input);
-
-      const result = getBlockUidFromElement(div);
-      assertEqual(result, 'abc', 'Should extract UID correctly');
+    runner.test('getBlockWithDescendants - returns null for empty or unknown UID', () => {
+      assertEqual(getBlockWithDescendants(''), null);
+      assertEqual(getBlockWithDescendants('non-existent'), null);
     });
 
-    // Test 5: isDescendantOf with null parameters
-    runner.test('isDescendantOf - should handle null parameters', () => {
-      const result = isDescendantOf(null, null);
-      assert(result === false, 'Should return false for null parameters');
+    runner.test('filterTreeByTag - keeps only children whose subtree has the tag', () => {
+      const tree = filterTreeByTag(getBlockWithDescendants('parent-collapsed'), 'selected');
+      assertEqual(tree.children.length, 1);
+      assertEqual(tree.children[0].uid, 'child-1');
     });
 
-    // Test 6: isDescendantOf with valid elements
-    runner.test('isDescendantOf - should detect descendant relationship', () => {
-      const parent = document.createElement('div');
-      const child = document.createElement('div');
-      const grandchild = document.createElement('div');
-
-      parent.appendChild(child);
-      child.appendChild(grandchild);
-
-      const result = isDescendantOf(grandchild, parent);
-      assert(result === true, 'Grandchild should be descendant of parent');
+    runner.test('contentContainsTag - matches [[tag]], #tag and tag:: but not partial words', () => {
+      assert(contentContainsTag('ver [[Tema]]', 'Tema'));
+      assert(contentContainsTag('ver #Tema', 'Tema'));
+      assert(contentContainsTag('Tema:: valor', 'Tema'));
+      assert(!contentContainsTag('ver #Temario', 'Tema'));
     });
 
-    // Test 7: isDescendantOf with non-descendant
-    runner.test('isDescendantOf - should return false for non-descendants', () => {
-      const div1 = document.createElement('div');
-      const div2 = document.createElement('div');
-
-      const result = isDescendantOf(div1, div2);
-      assert(result === false, 'Unrelated elements should not be descendants');
+    // --- Markdown ---
+    runner.test('treeToMarkdown - hierarchical output with headings and indentation', () => {
+      const md = treeToMarkdown([getBlockWithDescendants('parent-collapsed')]);
+      assertEqual(md, '- ## Parent Collapsed\n  - Child 1\n    - Grandchild 1.1 #selected\n  - Child 2');
     });
 
-
-
-    // Test 11: getBlockChildren with valid UID
-    runner.test('getBlockChildren - should retrieve block and children', () => {
-      const lines = getBlockChildren('test-uid-1', 0);
-      assert(lines.length > 0, 'Should return lines');
-      assert(lines[0].includes('Test Block 1'), 'Should contain block content');
+    runner.test('treeToMarkdown - flat output as paragraphs', () => {
+      const md = treeToMarkdown([getBlockWithDescendants('parent-collapsed')], 0, { structure: 'flat' });
+      assertEqual(md, '## Parent Collapsed\n\nChild 1\n\nGrandchild 1.1 #selected\n\nChild 2\n\n');
     });
 
-    // Test 12: getBlockChildren with empty UID
-    runner.test('getBlockChildren - should handle empty UID', () => {
-      const lines = getBlockChildren('', 0);
-      assert(lines.length === 0, 'Should return empty array for empty UID');
+    // --- EPUB markup ---
+    runner.test('escapeHTML - escapes XML special characters', () => {
+      assertEqual(escapeHTML(`<a href="x">'&'</a>`), '&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;');
     });
 
+    runner.test('roamMarkupToHtml - apostrophes stay a valid entity', () => {
+      assertEqual(roamMarkupToHtml("it's"), 'it&#39;s');
+    });
 
+    runner.test('roamMarkupToHtml - URL fragments are not turned into tags', () => {
+      assertEqual(roamMarkupToHtml('[link](https://ex.com/a#sec)'), '<a href="https://ex.com/a#sec">link</a>');
+    });
 
+    runner.test('roamMarkupToHtml - hashtags with accents, namespaces and inner dots', () => {
+      assertEqual(roamMarkupToHtml('#textoÍntegro'), '<span class="roam-tag">#textoÍntegro</span>');
+      assertEqual(roamMarkupToHtml('#Gemini/Pro/3.0/resumen'), '<span class="roam-tag">#Gemini/Pro/3.0/resumen</span>');
+      assertEqual(roamMarkupToHtml('fin #tag.'), 'fin <span class="roam-tag">#tag</span>.');
+    });
 
+    runner.test('roamMarkupToHtml - #[[Tag]] is wrapped once and [[Page]] as page ref', () => {
+      assertEqual(roamMarkupToHtml('#[[Tag largo]]'), '<span class="roam-tag">#Tag largo</span>');
+      assertEqual(roamMarkupToHtml('[[Página]]'), '<span class="roam-page">Página</span>');
+    });
 
-    // Test 15: showNotification
+    runner.test('roamMarkupToHtml - bold, italic, highlight, strike and code', () => {
+      assertEqual(
+        roamMarkupToHtml('**b** __i__ ^^h^^ ~~s~~ `c`'),
+        '<strong>b</strong> <em>i</em> <mark>h</mark> <del>s</del> <code>c</code>'
+      );
+    });
+
+    // --- Filenames ---
+    runner.test('sanitizeFilename - replaces forbidden characters and fixes double extensions', () => {
+      assertEqual(sanitizeFilename('a:b?c.md'), 'a_b_c.md');
+      assertEqual(sanitizeFilename('nota.md.MD'), 'nota.md');
+    });
+
+    runner.test('sanitizeFilename - truncates to 120 chars keeping the extension', () => {
+      const result = sanitizeFilename('x'.repeat(200) + '.epub');
+      assertEqual(result.length, 120);
+      assert(result.endsWith('.epub'), 'Extension should be preserved');
+    });
+
+    runner.test('sanitizeToCamelCase - removes accents and preserves acronyms', () => {
+      assertEqual(sanitizeToCamelCase('María Paz', false), 'MariaPaz');
+      assertEqual(sanitizeToCamelCase('exportar EPUB rápido', true), 'exportarEPUBRapido');
+    });
+
+    runner.test('generateRootFilename - uses leading bold text, skipping a date link', () => {
+      assertEqual(generateRootFilename('[[June 14th, 2026]] **Mi título** resto'), 'miTitulo');
+      assertEqual(generateRootFilename(''), 'untitled');
+    });
+
+    runner.test('generatePageFilename - one PascalCase segment per namespace level', () => {
+      assertEqual(generatePageFilename('entrevista/real/María Paz'), 'Entrevista_Real_MariaPaz');
+    });
+
+    runner.test('extractDate - takes the date from block content, then page title', () => {
+      assertEqual(extractDate('[[June 14th, 2026]] algo', 'Página'), '20260614');
+      assertEqual(extractDate('sin fecha', 'March 3rd, 2025'), '20250303');
+    });
+
+    runner.test('cleanTagInput - accepts #tag, [[tag]], #[[tag]] and plain text', () => {
+      assertEqual(cleanTagInput('#tag'), 'tag');
+      assertEqual(cleanTagInput('[[mi tag]]'), 'mi tag');
+      assertEqual(cleanTagInput('#[[mi tag]]'), 'mi tag');
+      assertEqual(cleanTagInput('   '), null);
+    });
+
+    // --- UI helpers ---
     runner.test('showNotification - should create notification element', () => {
       showNotification('Test', '#137CBD');
       const notifications = document.querySelectorAll('div[style*="position: fixed"]');
       assert(notifications.length > 0, 'Should create notification');
     });
 
-    // Test 16: getAllDescendantUids - should find all descendants
-    runner.test('getAllDescendantUids - should find all descendants', () => {
-      const descendants = getAllDescendantUids('parent-collapsed');
-      assert(descendants.length === 3, `Should find 3 descendants, found ${descendants.length}`);
-      assert(descendants.includes('child-1'), 'Should include child-1');
-      assert(descendants.includes('child-2'), 'Should include child-2');
-      assert(descendants.includes('grandchild-1-1'), 'Should include grandchild-1-1');
-    });
-
-    // Test 17: getAllDescendantUids - should handle empty UID
-    runner.test('getAllDescendantUids - should handle empty UID', () => {
-      const descendants = getAllDescendantUids('');
-      assert(descendants.length === 0, 'Should return empty array for empty UID');
-    });
-
-    // Test 18: getAllDescendantUids - should handle non-existent UID
-    runner.test('getAllDescendantUids - should handle non-existent UID', () => {
-      const descendants = getAllDescendantUids('non-existent');
-      assert(descendants.length === 0, 'Should return empty array for non-existent UID');
-    });
-
-    // Test 19: findSelectedDescendants - should find selected descendants
-    runner.test('findSelectedDescendants - should find selected descendants', () => {
-      const selectedUids = new Set(['grandchild-1-1']);
-      const found = findSelectedDescendants('parent-collapsed', selectedUids);
-      assert(found.length === 1, 'Should find 1 selected descendant');
-      assert(found[0] === 'grandchild-1-1', 'Should find grandchild-1-1');
-    });
-
-    // Test 20: findSelectedDescendants - should return empty when no selection
-    runner.test('findSelectedDescendants - should return empty when no selection', () => {
-      const selectedUids = new Set(['non-existent-uid']);
-      const found = findSelectedDescendants('parent-collapsed', selectedUids);
-      assert(found.length === 0, 'Should return empty array when no descendants selected');
-    });
-
-    // Test 21: buildPathToDescendants - should build path to selected descendant
-    runner.test('buildPathToDescendants - should build path to selected descendant', () => {
-      const targetUids = new Set(['grandchild-1-1']);
-      const lines = buildPathToDescendants('parent-collapsed', targetUids, 0);
-
-      assert(lines.length > 0, 'Should return lines');
-
-      // Should include parent
-      const hasParent = lines.some(line => line.includes('Parent Collapsed'));
-      assert(hasParent, 'Should include parent block');
-
-      // Should include child-1 (on path to target)
-      const hasChild1 = lines.some(line => line.includes('Child 1'));
-      assert(hasChild1, 'Should include Child 1 on path to target');
-
-      // Should include grandchild-1-1 (the target)
-      const hasGrandchild = lines.some(line => line.includes('Grandchild 1.1'));
-      assert(hasGrandchild, 'Should include target grandchild');
-
-      // Should NOT include child-2 (not on path to target)
-      const hasChild2 = lines.some(line => line.includes('Child 2'));
-      assert(!hasChild2, 'Should NOT include Child 2 as it is not on path to target');
-    });
-
-    // Test 22: buildPathToDescendants - should handle empty target set
-    runner.test('buildPathToDescendants - should handle empty target set', () => {
-      const targetUids = new Set();
-      const lines = buildPathToDescendants('parent-collapsed', targetUids, 0);
-      assert(lines.length === 0, 'Should return empty array for empty target set');
-    });
-
-    // Test 23: wrapWithAncestors - should return same tree if no ancestors
+    // --- Ancestors ---
+    // wrapWithAncestors - should return same tree if no ancestors
     runner.test('wrapWithAncestors - should return same tree if no ancestors', () => {
       const originalQ = window.roamAlphaAPI.data ? window.roamAlphaAPI.data.q : null;
       if (!window.roamAlphaAPI.data) window.roamAlphaAPI.data = {};
@@ -366,20 +348,21 @@
       assertEqual(wrapped.content, 'Target Block', 'Should keep same content');
       assertEqual(wrapped.children.length, 0, 'Should keep empty children');
       
-      if (originalQ) window.roamAlphaAPI.data.q = originalQ;
+      window.roamAlphaAPI.data.q = originalQ;
     });
 
-    // Test 24: wrapWithAncestors - should wrap tree with ancestor chain
+    // wrapWithAncestors - should wrap tree with ancestor chain
     runner.test('wrapWithAncestors - should wrap tree with ancestor chain', () => {
       const originalQ = window.roamAlphaAPI.data ? window.roamAlphaAPI.data.q : null;
       if (!window.roamAlphaAPI.data) window.roamAlphaAPI.data = {};
       
       // Mock q to simulate: target-uid -> parent-uid -> grandparent-uid
       window.roamAlphaAPI.data.q = (query) => {
-        if (query.includes('target-uid')) {
+        // Match the quoted UID: "grandparent-uid" also contains the substring parent-uid
+        if (query.includes('"target-uid"')) {
           return [['parent-uid', 'Parent Block']];
         }
-        if (query.includes('parent-uid')) {
+        if (query.includes('"parent-uid"')) {
           return [['grandparent-uid', 'Grandparent Block']];
         }
         return [];
@@ -406,7 +389,7 @@
       assertEqual(target.children.length, 1, 'Target should retain its child');
       assertEqual(target.children[0].uid, 'child-uid', 'Target child should be child-uid');
 
-      if (originalQ) window.roamAlphaAPI.data.q = originalQ;
+      window.roamAlphaAPI.data.q = originalQ;
     });
 
     // Run all tests

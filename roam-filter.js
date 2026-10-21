@@ -1,6 +1,6 @@
 // Roam Filter Export - Smart Export for Filtered Blocks
-// Version: 2.41.0
-// Date: 2026-08-11 22:45
+// Version: 2.41.1
+// Date: 2026-10-21 04:34
 //
 // Created by Camilo Luvino
 // https://github.com/camiloluvino/roamExportFilter
@@ -35,7 +35,7 @@ const loadJSZip = () => {
 // --- queries.js ---
 const isRoamAPIAvailable = () => {
   return typeof window !== 'undefined' &&
-    window.roamAlphaAPI &&
+    !!window.roamAlphaAPI &&
     typeof window.roamAlphaAPI.data?.q === 'function';
 };
 
@@ -1162,12 +1162,15 @@ const roamMarkupToHtml = (str) => {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Roam specific links
+  // Simple Hash Tags: #Tag (supports accents and namespaces like #a/b).
+  // Runs first so it never re-wraps the "#" emitted by #[[Tag]] below.
+  // Not matched after "&" (entities like &#39;), letters/digits or "/" and "=" (URL fragments in hrefs).
+  // Inner dots are allowed (#Gemini/Pro/3.0/resumen) but a trailing one is left as punctuation.
+  html = html.replace(/(^|[^&\p{L}\p{N}_\/=])#([\p{L}\p{N}_\-\/]+(?:\.[\p{L}\p{N}_\-\/]+)*)/gu, '$1<span class="roam-tag">#$2</span>');
   // Hash Tags: #[[Tag]] — MUST come before [[Page]] to avoid partial match
   html = html.replace(/#\[\[(.*?)\]\]/g, '<span class="roam-tag">#$1</span>');
   // Page refs: [[Page]]
   html = html.replace(/\[\[(.*?)\]\]/g, '<span class="roam-page">$1</span>');
-  // Simple Hash Tags: #Tag
-  html = html.replace(/#([a-zA-Z0-9_\-]+)/g, '<span class="roam-tag">#$1</span>');
 
   return html;
 };
@@ -1955,7 +1958,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
               ${toggleBtn}
               <label style="display: flex; align-items: flex-start; cursor: pointer; gap: 6px; flex: 1;">
                 <input type="checkbox" data-uid="${node.uid}" class="branch-checkbox" style="margin-top: 3px; cursor: pointer; min-width: 14px;">
-                <span class="node-text-span" style="font-size: 14px; line-height: 1.5;" title="${(node.fullContent || node.content || '').replace(/"/g, '&quot;')}">${node.content}${deepInfo}</span>
+                <span class="node-text-span" style="font-size: 14px; line-height: 1.5;" title="${escapeHTML(node.fullContent || node.content || '')}">${escapeHTML(node.content)}${deepInfo}</span>
               </label>
             </div>
             ${childrenHtml}
@@ -1976,8 +1979,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
       return pages.map(page => `
         <div style="padding: 5px 0;">
           <label style="display: flex; align-items: center; cursor: pointer; gap: 8px;">
-            <input type="checkbox" data-uid="${page.uid}" data-title="${page.title.replace(/"/g, '&quot;')}" data-short="${page.shortName.replace(/"/g, '&quot;')}" class="page-checkbox" style="cursor: pointer; min-width: 16px;">
-            <span style="font-size: 14px; line-height: 1.5;">📄 ${page.shortName}</span>
+            <input type="checkbox" data-uid="${page.uid}" data-title="${escapeHTML(page.title)}" data-short="${escapeHTML(page.shortName)}" class="page-checkbox" style="cursor: pointer; min-width: 16px;">
+            <span style="font-size: 14px; line-height: 1.5;">📄 ${escapeHTML(page.shortName)}</span>
           </label>
         </div>
       `).join('');
@@ -2983,7 +2986,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
                 border: 1px solid ${isSelected ? '#137cbd' : 'transparent'};
               " onmouseover="if(this.dataset.selected!=='true') this.style.background='rgba(0,0,0,0.03)'" onmouseout="if(this.dataset.selected!=='true') this.style.background='transparent'">
                 <span class="index-node-text" style="font-size: 13px; color: #333; font-weight: ${indentLevel === 0 ? '600' : 'normal'};">
-                  ${cleanContent}
+                  ${escapeHTML(cleanContent)}
                 </span>
                 ${refInfo}
               </div>
@@ -3005,7 +3008,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       if (!indexTree || !indexTree.children || indexTree.children.length === 0) {
         container.innerHTML = `
           <div style="text-align: center; color: #999; padding: 40px 20px; font-size: 13px;">
-            La página de índice <b>"${pageTitle}"</b> no existe o está vacía.<br>
+            La página de índice <b>"${escapeHTML(pageTitle)}"</b> no existe o está vacía.<br>
             Créala en Roam, configúrala arriba o guarda selecciones desde la pestaña <b>🌳 Por Ramas</b>.
           </div>
         `;
@@ -3765,7 +3768,7 @@ const promptUnifiedExport = (pageName, pageUid) => {
       }
 
       container.innerHTML = tags.map(tag => `
-        <span class="fav-tag-chip" data-tag="${tag}" style="
+        <span class="fav-tag-chip" data-tag="${escapeHTML(tag)}" style="
           display: inline-flex;
           align-items: center;
           gap: 6px;
@@ -3778,8 +3781,8 @@ const promptUnifiedExport = (pageName, pageUid) => {
           transition: all 0.2s;
           user-select: none;
         ">
-          <span class="chip-text">#${tag}</span>
-          <span class="remove-fav-tag" data-tag="${tag}" style="
+          <span class="chip-text">#${escapeHTML(tag)}</span>
+          <span class="remove-fav-tag" data-tag="${escapeHTML(tag)}" style="
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -5326,7 +5329,7 @@ const initExtension = () => {
     });
   }
 
-  console.log("Roam Filter Export extension loaded (v2.41.0)");
+  console.log("Roam Filter Export extension loaded (v2.41.1)");
 };
 
 const cleanupExtension = () => {
